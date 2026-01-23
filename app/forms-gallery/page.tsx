@@ -169,8 +169,6 @@ export default function FormsGalleryPage() {
     category: 'HR',
     file: null as File | null,
   });
-  const [selectedForm, setSelectedForm] = useState<any>(null);
-  const [showViewModal, setShowViewModal] = useState(false);
 
   const categories = ['all', 'HR', 'Finance', 'Projects', 'Admin', 'Events', 'Legal', 'Training', 'Reports'];
 
@@ -185,8 +183,8 @@ export default function FormsGalleryPage() {
   };
 
   const handleView = (form: any) => {
-    setSelectedForm(form);
-    setShowViewModal(true);
+    const filePath = `/forms/${form.fileName}`;
+    window.open(filePath, '_blank');
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -387,90 +385,6 @@ export default function FormsGalleryPage() {
             </div>
           </div>
         </Card>
-
-        {/* View Form Modal */}
-        {showViewModal && selectedForm && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <Card className="bg-white max-w-4xl w-full p-8 space-y-6 max-h-[90vh] flex flex-col">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h2 className="text-2xl font-bold text-slate-900">{selectedForm.name}</h2>
-                  <p className="text-slate-600 mt-2">{selectedForm.description}</p>
-                </div>
-                <button
-                  onClick={() => setShowViewModal(false)}
-                  className="text-slate-400 hover:text-slate-600 text-2xl"
-                >
-                  ✕
-                </button>
-              </div>
-
-              <div className="bg-slate-50 p-4 rounded-lg space-y-3">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-slate-600">File Type</p>
-                    <p className="font-semibold text-slate-900">{selectedForm.fileType}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-slate-600">File Size</p>
-                    <p className="font-semibold text-slate-900">{selectedForm.fileSize}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-slate-600">Category</p>
-                    <p className="font-semibold text-slate-900">{selectedForm.category}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-slate-600">Uploaded</p>
-                    <p className="font-semibold text-slate-900">{selectedForm.uploadedDate}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Document Preview */}
-              {selectedForm.fileType === 'PDF' ? (
-                <div className="flex-1 min-h-[500px] bg-slate-50 rounded-lg border border-slate-200 overflow-hidden">
-                  <iframe
-                    src={`/forms/${selectedForm.fileName}#toolbar=0`}
-                    className="w-full h-full"
-                    title={selectedForm.name}
-                    style={{ minHeight: '500px' }}
-                  />
-                </div>
-              ) : (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 space-y-4 text-center">
-                  <div className="text-6xl">📄</div>
-                  <p className="text-sm font-semibold text-slate-900">Microsoft Word Document</p>
-                  <p className="text-sm text-slate-700">
-                    Word documents cannot be previewed directly in the browser. Please download the file to view it in Microsoft Word, Google Docs, or another compatible application.
-                  </p>
-                  <button
-                    onClick={() => handleDownload(selectedForm)}
-                    className="inline-flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition"
-                  >
-                    <Download size={18} />
-                    Download to View
-                  </button>
-                </div>
-              )}
-
-              <div className="flex gap-3 pt-4 border-t border-slate-200">
-                <button
-                  onClick={() => handleDownload(selectedForm)}
-                  className="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-lg transition"
-                >
-                  <Download size={18} />
-                  Download
-                </button>
-                <button
-                  onClick={() => setShowViewModal(false)}
-                  className="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 font-medium py-2 rounded-lg transition"
-                >
-                  Close
-                </button>
-              </div>
-            </Card>
-          </div>
-        )}
 
         {/* Upload Form Modal */}
         {showUploadModal && (
