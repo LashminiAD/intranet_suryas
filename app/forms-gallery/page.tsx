@@ -125,41 +125,41 @@ export default function FormsGalleryPage() {
       id: 11,
       name: 'Post Cover',
       description: 'Cover letter template for postal correspondence',
-      fileSize: '165 KB',
+      fileSize: '294 KB',
       category: 'Admin',
-      fileType: 'DOCX',
-      fileName: 'Post Cover.docx',
-      uploadedDate: '2024-01-22',
+      fileType: 'PDF',
+      fileName: 'Post Cover.pdf',
+      uploadedDate: '2024-01-24',
     },
     {
       id: 12,
       name: 'Part Time Employment Form',
       description: 'Form for part-time employment agreements and documentation',
-      fileSize: '15 KB',
+      fileSize: '229 KB',
       category: 'HR',
-      fileType: 'DOCX',
-      fileName: 'Part time.docx',
-      uploadedDate: '2024-01-22',
+      fileType: 'PDF',
+      fileName: 'Part time.pdf',
+      uploadedDate: '2024-01-24',
     },
     {
       id: 13,
       name: 'Project Agreement',
       description: 'Legal agreement form for project collaboration',
-      fileSize: '27 KB',
+      fileSize: '8 KB',
       category: 'Legal',
-      fileType: 'DOCX',
-      fileName: 'Project Agreement.docx',
-      uploadedDate: '2024-01-22',
+      fileType: 'PDF',
+      fileName: 'Project Agreement.pdf',
+      uploadedDate: '2024-01-24',
     },
     {
       id: 14,
       name: 'Weekly & Monthly Report Form',
       description: 'Template for submitting weekly and monthly activity reports',
-      fileSize: '27 KB',
+      fileSize: '141 KB',
       category: 'Reports',
-      fileType: 'DOCX',
-      fileName: 'Surya_MiB_Weekly_Monthly_Report_Form.docx',
-      uploadedDate: '2024-01-22',
+      fileType: 'PDF',
+      fileName: 'Surya_MiB_Weekly_Monthly_Report.pdf',
+      uploadedDate: '2024-01-24',
     },
   ]);
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -192,11 +192,8 @@ export default function FormsGalleryPage() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const isPDF = file.type === 'application/pdf';
-      const isDOCX = file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-      
-      if (!isPDF && !isDOCX) {
-        toast.error('Only PDF and Word (.docx) files are allowed');
+      if (file.type !== 'application/pdf') {
+        toast.error('Only PDF files are allowed');
         return;
       }
       setUploadData((prev) => ({ ...prev, file }));
@@ -518,10 +515,10 @@ export default function FormsGalleryPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Upload PDF or Word File *</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Upload PDF File *</label>
                   <input
                     type="file"
-                    accept=".pdf,.docx"
+                    accept=".pdf"
                     onChange={handleFileChange}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg"
                   />
