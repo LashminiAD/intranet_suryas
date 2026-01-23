@@ -96,40 +96,37 @@ export default function SignUpPage() {
     setIsLoading(true);
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      // Call backend API to register user
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: formData.email,
+          email: formData.email,
+          password: formData.password,
+          fullName: formData.fullName,
+          role: 'user', // All signup users are 'user' role
+          designation: formData.role.charAt(0).toUpperCase() + formData.role.slice(1), // Intern, Employee, Freelancer
+        }),
+      });
 
-      // Generate a unique user ID
-      const roleCode: Record<string, string> = {
-        intern: 'MIB-I',
-        freelancer: 'MIB-F',
-        employee: 'MIB-E',
-      };
-      const code = roleCode[formData.role] || 'MIB-U';
-      const randomNum = Math.floor(Math.random() * 10000)
-        .toString()
-        .padStart(4, '0');
-      const userId = `${code}-${randomNum}`;
+      if (!response.ok) {
+        const error = await response.json();
+        toast.error(error.error || 'Registration failed');
+        setIsLoading(false);
+        return;
+      }
 
-      // Store registration data
-      const userData = {
-        username: formData.fullName,
-        email: formData.email,
-        role: formData.role,
-        userId,
-        registeredAt: new Date().toISOString(),
-      };
-      localStorage.setItem(`user_${formData.email}`, JSON.stringify(userData));
+      const data = await response.json();
+      toast.success('Registration successful! Redirecting to login...');
 
-      toast.success('Registration successful! Your User ID: ' + userId);
-
-      // Auto-login with the new account
+      // Redirect to login page
       setTimeout(() => {
-        login(formData.fullName, formData.password, formData.role);
-        router.push('/dashboard');
-      }, 1000);
+        router.push('/login');
+      }, 1500);
     } catch (error) {
-      toast.error('Registration failed. Please try again.');
+      console.error('Registration error:', error);
+      toast.error('An error occurred during registration');
     } finally {
       setIsLoading(false);
     }

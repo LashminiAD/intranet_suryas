@@ -5,7 +5,7 @@ import { findUserByUsername, addUser } from '@/lib/user-database';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { username, email, password, fullName, role = 'user' } = body;
+    const { username, email, password, fullName, role = 'user', designation = '' } = body;
 
     // Validate inputs
     if (!username || !email || !password || !fullName) {
@@ -34,6 +34,7 @@ export async function POST(request: NextRequest) {
       passwordHash,
       role: role as 'admin' | 'user' | 'guest',
       fullName,
+      designation: designation || 'User',
       profilePictureUploaded: false,
       createdAt: new Date().toISOString(),
     };

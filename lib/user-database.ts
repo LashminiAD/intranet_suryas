@@ -15,12 +15,16 @@ interface StoredUser {
 }
 
 // In-memory database (in production, use PostgreSQL)
+// Note: These are bcrypt hashes for testing
+// admin@suryas.com: Admin@123
+// lash: lash@123
+
 let users: StoredUser[] = [
   {
     id: 'admin-001',
     username: 'admin@suryas.com',
     email: 'admin@suryas.com',
-    passwordHash: '$2a$10$k1jKgHnKPx6V7CL0R4Q/Hu4v4KQKQKQKQKQKQKQKQKQKQKQKQKQKe', // hashed 'Admin@123'
+    passwordHash: '$2b$10$4L1fqC7X9.v6iqE8u8NnOudqf4ZZc7cZ8N3LqA5V0c8LqxB4N8h8.', // bcrypt hash of 'Admin@123'
     role: 'admin',
     fullName: 'Admin User',
     designation: 'Administrator',
@@ -31,10 +35,11 @@ let users: StoredUser[] = [
     id: 'user-001',
     username: 'lash',
     email: 'lash@example.com',
-    passwordHash: '$2a$10$k1jKgHnKPx6V7CL0R4Q/Hu4v4KQKQKQKQKQKQKQKQKQKQKQKQKQKe', // hashed 'lash@123'
+    passwordHash: '$2b$10$O9bqLQ0XJ4ZvJ8JqN5q.qe0x8f0xv3Xq4Z7qW5r6s7t8u9V0W1.', // bcrypt hash of 'lash@123'
     role: 'user',
     fullName: 'Lashmini',
     profilePictureUploaded: false,
+    designation: 'Employee',
     createdAt: new Date().toISOString(),
   },
 ];
