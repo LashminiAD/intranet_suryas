@@ -26,9 +26,11 @@ export default function LeaveFormPage() {
     toDate: '',
     reason: '',
     medicalCertificate: null as File | null,
+    medicalProof: null as File | null,
   });
 
   const [certificateFileName, setCertificateFileName] = useState('');
+  const [medicalProofFileName, setMedicalProofFileName] = useState('');
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -54,6 +56,18 @@ export default function LeaveFormPage() {
       }
       setFormData((prev) => ({ ...prev, medicalCertificate: file }));
       setCertificateFileName(file.name);
+    }
+  };
+
+  const handleMedicalProofUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.type !== 'application/pdf') {
+        toast.error('Only PDF files are allowed');
+        return;
+      }
+      setFormData((prev) => ({ ...prev, medicalProof: file }));
+      setMedicalProofFileName(file.name);
     }
   };
 
@@ -83,8 +97,10 @@ export default function LeaveFormPage() {
       toDate: '',
       reason: '',
       medicalCertificate: null,
+      medicalProof: null,
     });
     setCertificateFileName('');
+    setMedicalProofFileName('');
   };
 
   const handleCancel = () => {
@@ -189,6 +205,29 @@ export default function LeaveFormPage() {
                         className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                         rows={3}
                       />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Medical Proof/Certificate (PDF) - For long medical leaves</label>
+                      <p className="text-xs text-slate-500 mb-2">Upload medical certificate or proof if you have one (optional)</p>
+                      <div className="flex items-center gap-2">
+                        <label className="flex-1 flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-purple-300 rounded-lg cursor-pointer hover:bg-purple-50 transition">
+                          <Upload size={18} className="text-purple-600" />
+                          <span className="text-sm text-purple-600 font-medium">Click to upload PDF</span>
+                          <input
+                            type="file"
+                            accept=".pdf"
+                            onChange={handleMedicalProofUpload}
+                            className="hidden"
+                          />
+                        </label>
+                      </div>
+                      {medicalProofFileName && (
+                        <div className="mt-2 flex items-center gap-2 text-sm text-green-700 bg-green-50 p-2 rounded">
+                          <FileUp size={16} />
+                          {medicalProofFileName}
+                        </div>
+                      )}
                     </div>
 
                     {formData.leaveType === 'sick' && (
