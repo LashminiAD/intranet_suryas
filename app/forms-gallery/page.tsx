@@ -121,6 +121,46 @@ export default function FormsGalleryPage() {
       fileName: 'R&D Declaration.pdf',
       uploadedDate: '2024-01-22',
     },
+    {
+      id: 11,
+      name: 'Post Cover',
+      description: 'Cover letter template for postal correspondence',
+      fileSize: '165 KB',
+      category: 'Admin',
+      fileType: 'DOCX',
+      fileName: 'Post Cover.docx',
+      uploadedDate: '2024-01-22',
+    },
+    {
+      id: 12,
+      name: 'Part Time Employment Form',
+      description: 'Form for part-time employment agreements and documentation',
+      fileSize: '15 KB',
+      category: 'HR',
+      fileType: 'DOCX',
+      fileName: 'Part time.docx',
+      uploadedDate: '2024-01-22',
+    },
+    {
+      id: 13,
+      name: 'Project Agreement',
+      description: 'Legal agreement form for project collaboration',
+      fileSize: '27 KB',
+      category: 'Legal',
+      fileType: 'DOCX',
+      fileName: 'Project Agreement.docx',
+      uploadedDate: '2024-01-22',
+    },
+    {
+      id: 14,
+      name: 'Weekly & Monthly Report Form',
+      description: 'Template for submitting weekly and monthly activity reports',
+      fileSize: '27 KB',
+      category: 'Reports',
+      fileType: 'DOCX',
+      fileName: 'Surya_MiB_Weekly_Monthly_Report_Form.docx',
+      uploadedDate: '2024-01-22',
+    },
   ]);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploadData, setUploadData] = useState({
@@ -150,8 +190,11 @@ export default function FormsGalleryPage() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.type !== 'application/pdf') {
-        toast.error('Only PDF files are allowed');
+      const isPDF = file.type === 'application/pdf';
+      const isDOCX = file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      
+      if (!isPDF && !isDOCX) {
+        toast.error('Only PDF and Word (.docx) files are allowed');
         return;
       }
       setUploadData((prev) => ({ ...prev, file }));
@@ -389,10 +432,10 @@ export default function FormsGalleryPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Upload PDF File *</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Upload PDF or Word File *</label>
                   <input
                     type="file"
-                    accept=".pdf"
+                    accept=".pdf,.docx"
                     onChange={handleFileChange}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg"
                   />
