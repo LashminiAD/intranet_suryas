@@ -54,26 +54,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return `${code}-${randomNum}`;
   };
 
-  const login = (username: string, password: string, role: string) => {
-    const roleMap: Record<string, 'admin' | 'user' | 'guest'> = {
-      admin: 'admin',
-      founder: 'admin',
-      intern: 'user',
-      freelancer: 'user',
-      guest: 'guest',
-    };
+  const login = async (username: string, password: string, role: string) => {
+    try {
+      // Call backend API for authentication
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
 
-    const newUser: User = {
-      username,
-      email: `${username}@suryasmib.com`,
-      role: roleMap[role] || 'user',
-      designation: role.charAt(0).toUpperCase() + role.slice(1),
-      id: generateUserId(role),
-      fullName: username,
-    };
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Login failed');
+      }
 
-    setUser(newUser);
-    localStorage.setItem('currentUser', JSON.stringify(newUser));
+      const data = await response.json();
+      
+      // User authenticated successfully
+      setUser(data.user);
+      localStorage.setItem('currentUser', JSON.stringify(data.user));
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
+    }
   };
 
   const guestLogin = (guestData: any) => {

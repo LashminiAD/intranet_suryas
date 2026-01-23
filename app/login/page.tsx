@@ -18,10 +18,11 @@ export default function LoginPage() {
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('admin');
+  const [role, setRole] = useState('user');
   const [showPassword, setShowPassword] = useState(false);
   const [showGuestModal, setShowGuestModal] = useState(false);
   const [showProfileSetup, setShowProfileSetup] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [guestData, setGuestData] = useState({
     name: '',
     designation: '',
@@ -30,19 +31,45 @@ export default function LoginPage() {
     purposeOfVisit: '',
   });
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
 
     if (!username || !password) {
       toast.error('Please enter username and password');
+      setLoading(false);
       return;
     }
 
-    login(username, password, role);
-    toast.success(`Welcome, ${username}!`);
+    try {
+      // Call backend API for authentication
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
 
-    // Redirect to homepage for all users after login
-    router.push('/homepage');
+      if (!response.ok) {
+        const error = await response.json();
+        toast.error(error.error || 'Login failed');
+        setLoading(false);
+        return;
+      }
+
+      const data = await response.json();
+      
+      // Update auth context
+      await login(username, password, role);
+      
+      toast.success(`Welcome, ${data.user.fullName}!`);
+
+      // Redirect to homepage for all users after login
+      router.push('/homepage');
+    } catch (error) {
+      console.error('Login error:', error);
+      toast.error('An error occurred during login');
+      setLoading(false);
+    }
   };
 
   const handleGuestSubmit = (e: React.FormEvent) => {
@@ -131,8 +158,12 @@ export default function LoginPage() {
               </div>
 
               {/* Login Button */}
-              <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 mt-6">
-                Login
+              <Button 
+                type="submit" 
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 mt-6"
+                disabled={loading}
+              >
+                {loading ? 'Logging in...' : 'Login'}
               </Button>
             </form>
 
@@ -140,13 +171,13 @@ export default function LoginPage() {
             <div className="mt-6 pt-6 border-t border-slate-200">
               <div className="flex justify-between items-center text-sm">
                 <a href="#" className="text-blue-600 hover:text-blue-700 font-medium hover:underline">
-                  🔑 Forgot Password?
+                  Forgot Password?
                 </a>
                 <button
                   onClick={() => router.push('/signup')}
                   className="text-blue-600 hover:text-blue-700 font-medium hover:underline"
                 >
-                  ✨ New User? Sign Up
+                  New User? Sign Up
                 </button>
               </div>
             </div>
