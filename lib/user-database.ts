@@ -24,7 +24,7 @@ let users: StoredUser[] = [
     id: 'admin-001',
     username: 'admin@suryas.com',
     email: 'admin@suryas.com',
-    passwordHash: '$2b$10$4L1fqC7X9.v6iqE8u8NnOudqf4ZZc7cZ8N3LqA5V0c8LqxB4N8h8.', // bcrypt hash of 'Admin@123'
+    passwordHash: '$2b$10$9c0854Bl7jRNuzJPsMEziOzIQ3Mw4iULIW8ql6ErBGne1my5IwzeW', // bcrypt hash of 'Admin@123'
     role: 'admin',
     fullName: 'Admin User',
     designation: 'Administrator',
@@ -35,7 +35,7 @@ let users: StoredUser[] = [
     id: 'user-001',
     username: 'lash',
     email: 'lash@example.com',
-    passwordHash: '$2b$10$O9bqLQ0XJ4ZvJ8JqN5q.qe0x8f0xv3Xq4Z7qW5r6s7t8u9V0W1.', // bcrypt hash of 'lash@123'
+    passwordHash: '$2b$10$DDmcqgg0ZyRC8Q9RHom3B.waYCgzIFqGRi/u9/Apo.ota6rhwLnuS', // bcrypt hash of 'lash@123'
     role: 'user',
     fullName: 'Lashmini',
     profilePictureUploaded: false,
