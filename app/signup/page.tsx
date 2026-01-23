@@ -16,11 +16,11 @@ export default function SignUpPage() {
   const { login } = useAuth();
 
   const [formData, setFormData] = useState({
-    fullName: '',
+    username: '',
     email: '',
     password: '',
     confirmPassword: '',
-    role: 'intern',
+    role: 'user',
   });
 
   const [showPassword, setShowPassword] = useState(false);
@@ -64,8 +64,10 @@ export default function SignUpPage() {
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.fullName.trim()) {
-      newErrors.fullName = 'Full name is required';
+    if (!formData.username.trim()) {
+      newErrors.username = 'Username is required';
+    } else if (formData.username.length < 3) {
+      newErrors.username = 'Username must be at least 3 characters';
     }
     if (!formData.email.trim()) {
       newErrors.email = 'Email is required';
@@ -101,12 +103,12 @@ export default function SignUpPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          username: formData.email,
+          username: formData.username,
           email: formData.email,
           password: formData.password,
-          fullName: formData.fullName,
-          role: 'user', // All signup users are 'user' role
-          designation: formData.role.charAt(0).toUpperCase() + formData.role.slice(1), // Intern, Employee, Freelancer
+          fullName: formData.username,
+          role: formData.role, // Admin or user
+          designation: 'Not Set', // Will be set during profile setup
         }),
       });
 
@@ -154,20 +156,20 @@ export default function SignUpPage() {
             <h2 className="text-2xl font-bold text-slate-800 mb-6">Sign Up</h2>
 
             <form onSubmit={handleSignUp} className="space-y-4">
-              {/* Full Name */}
+              {/* Username */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Full Name *</label>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Username *</label>
                 <Input
                   type="text"
-                  name="fullName"
-                  placeholder="Enter your full name"
-                  value={formData.fullName}
+                  name="username"
+                  placeholder="Enter your username"
+                  value={formData.username}
                   onChange={handleInputChange}
-                  className={`w-full border-slate-300 ${errors.fullName ? 'border-red-500' : ''}`}
+                  className={`w-full border-slate-300 ${errors.username ? 'border-red-500' : ''}`}
                 />
-                {errors.fullName && (
+                {errors.username && (
                   <p className="text-red-600 text-xs mt-1 flex items-center gap-1">
-                    <AlertCircle size={14} /> {errors.fullName}
+                    <AlertCircle size={14} /> {errors.username}
                   </p>
                 )}
               </div>
@@ -275,15 +277,14 @@ export default function SignUpPage() {
 
               {/* Role Selection */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Account Type *</label>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Account Role *</label>
                 <Select value={formData.role} onValueChange={(value) => setFormData((prev) => ({ ...prev, role: value }))}>
                   <SelectTrigger className="w-full border-slate-300">
-                    <SelectValue placeholder="Select account type" />
+                    <SelectValue placeholder="Select account role" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="intern">Intern</SelectItem>
-                    <SelectItem value="freelancer">Freelancer</SelectItem>
-                    <SelectItem value="employee">Employee</SelectItem>
+                    <SelectItem value="user">User</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

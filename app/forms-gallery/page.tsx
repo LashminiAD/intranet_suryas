@@ -394,7 +394,7 @@ export default function FormsGalleryPage() {
         {/* View Form Modal */}
         {showViewModal && selectedForm && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <Card className="bg-white max-w-2xl w-full p-8 space-y-6">
+            <Card className="bg-white max-w-4xl w-full p-8 space-y-6 max-h-[90vh] flex flex-col">
               <div className="flex items-start justify-between">
                 <div>
                   <h2 className="text-2xl font-bold text-slate-900">{selectedForm.name}</h2>
@@ -429,27 +429,34 @@ export default function FormsGalleryPage() {
                 </div>
               </div>
 
-              {selectedForm.fileType === 'DOCX' ? (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
-                  <p className="text-sm font-semibold text-slate-900">📄 Word Document Preview</p>
-                  <p className="text-sm text-slate-700">
-                    This is a Microsoft Word document. To view and edit the document, please download it and open it with:
-                  </p>
-                  <ul className="text-sm text-slate-700 space-y-1 ml-4 list-disc">
-                    <li>Microsoft Word</li>
-                    <li>Google Docs (upload the file)</li>
-                    <li>LibreOffice Writer</li>
-                    <li>OneDrive / SharePoint</li>
-                  </ul>
+              {/* Document Preview */}
+              {selectedForm.fileType === 'PDF' ? (
+                <div className="flex-1 min-h-[500px] bg-slate-50 rounded-lg border border-slate-200 overflow-hidden">
+                  <iframe
+                    src={`/forms/${selectedForm.fileName}#toolbar=0`}
+                    className="w-full h-full"
+                    title={selectedForm.name}
+                    style={{ minHeight: '500px' }}
+                  />
                 </div>
               ) : (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <p className="text-sm font-semibold text-slate-900">✓ PDF Ready to Download</p>
-                  <p className="text-sm text-slate-700 mt-2">Click the Download button to get this PDF file.</p>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 space-y-4 text-center">
+                  <div className="text-6xl">📄</div>
+                  <p className="text-sm font-semibold text-slate-900">Microsoft Word Document</p>
+                  <p className="text-sm text-slate-700">
+                    Word documents cannot be previewed directly in the browser. Please download the file to view it in Microsoft Word, Google Docs, or another compatible application.
+                  </p>
+                  <button
+                    onClick={() => handleDownload(selectedForm)}
+                    className="inline-flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition"
+                  >
+                    <Download size={18} />
+                    Download to View
+                  </button>
                 </div>
               )}
 
-              <div className="flex gap-3 pt-4">
+              <div className="flex gap-3 pt-4 border-t border-slate-200">
                 <button
                   onClick={() => handleDownload(selectedForm)}
                   className="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-lg transition"

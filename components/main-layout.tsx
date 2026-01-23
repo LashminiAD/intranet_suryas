@@ -48,7 +48,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
   const [showQRModal, setShowQRModal] = useState(false);
 
   const paymentMethods = [
-    { id: 'upi', name: 'UPI Payment', image: '/qr-upi.svg', upi: 'suryas-mib@okaxis' },
+    { id: 'upi', name: 'UPI Payment', image: '/qr-upi.svg', upi: 'Q946965798@ybl' },
   ];
 
   const handleQRClick = (method: any) => {

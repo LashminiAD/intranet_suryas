@@ -36,7 +36,7 @@ export function QRCodeModal({ isOpen, onClose, qrCode }: QRModalProps) {
       <DialogContent className={`${isZoomed ? 'w-full max-w-2xl' : 'sm:max-w-md'}`}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            💳 {qrCode.name} Payment QR
+            💳 {qrCode.name} - SURYA'S MIB
           </DialogTitle>
         </DialogHeader>
 
