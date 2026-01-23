@@ -169,6 +169,8 @@ export default function FormsGalleryPage() {
     category: 'HR',
     file: null as File | null,
   });
+  const [selectedForm, setSelectedForm] = useState<any>(null);
+  const [showViewModal, setShowViewModal] = useState(false);
 
   const categories = ['all', 'HR', 'Finance', 'Projects', 'Admin', 'Events', 'Legal', 'Training', 'Reports'];
 
@@ -183,16 +185,8 @@ export default function FormsGalleryPage() {
   };
 
   const handleView = (form: any) => {
-    const filePath = `/forms/${form.fileName}`;
-    
-    if (form.fileType === 'DOCX' || form.fileName.endsWith('.docx')) {
-      // Use Microsoft Office Online Viewer for Word documents
-      const viewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(window.location.origin + filePath)}`;
-      window.open(viewerUrl, '_blank');
-    } else {
-      // Open PDF directly
-      window.open(filePath, '_blank');
-    }
+    setSelectedForm(form);
+    setShowViewModal(true);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -396,6 +390,83 @@ export default function FormsGalleryPage() {
             </div>
           </div>
         </Card>
+
+        {/* View Form Modal */}
+        {showViewModal && selectedForm && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <Card className="bg-white max-w-2xl w-full p-8 space-y-6">
+              <div className="flex items-start justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-slate-900">{selectedForm.name}</h2>
+                  <p className="text-slate-600 mt-2">{selectedForm.description}</p>
+                </div>
+                <button
+                  onClick={() => setShowViewModal(false)}
+                  className="text-slate-400 hover:text-slate-600 text-2xl"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="bg-slate-50 p-4 rounded-lg space-y-3">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-slate-600">File Type</p>
+                    <p className="font-semibold text-slate-900">{selectedForm.fileType}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-slate-600">File Size</p>
+                    <p className="font-semibold text-slate-900">{selectedForm.fileSize}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-slate-600">Category</p>
+                    <p className="font-semibold text-slate-900">{selectedForm.category}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-slate-600">Uploaded</p>
+                    <p className="font-semibold text-slate-900">{selectedForm.uploadedDate}</p>
+                  </div>
+                </div>
+              </div>
+
+              {selectedForm.fileType === 'DOCX' ? (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
+                  <p className="text-sm font-semibold text-slate-900">📄 Word Document Preview</p>
+                  <p className="text-sm text-slate-700">
+                    This is a Microsoft Word document. To view and edit the document, please download it and open it with:
+                  </p>
+                  <ul className="text-sm text-slate-700 space-y-1 ml-4 list-disc">
+                    <li>Microsoft Word</li>
+                    <li>Google Docs (upload the file)</li>
+                    <li>LibreOffice Writer</li>
+                    <li>OneDrive / SharePoint</li>
+                  </ul>
+                </div>
+              ) : (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <p className="text-sm font-semibold text-slate-900">✓ PDF Ready to Download</p>
+                  <p className="text-sm text-slate-700 mt-2">Click the Download button to get this PDF file.</p>
+                </div>
+              )}
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={() => handleDownload(selectedForm)}
+                  className="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-lg transition"
+                >
+                  <Download size={18} />
+                  Download
+                </button>
+                <button
+                  onClick={() => setShowViewModal(false)}
+                  className="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 font-medium py-2 rounded-lg transition"
+                >
+                  Close
+                </button>
+              </div>
+            </Card>
+          </div>
+        )}
 
         {/* Upload Form Modal */}
         {showUploadModal && (
