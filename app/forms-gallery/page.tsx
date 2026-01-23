@@ -183,8 +183,16 @@ export default function FormsGalleryPage() {
   };
 
   const handleView = (form: any) => {
-    const pdfPath = `/forms/${form.fileName}`;
-    window.open(pdfPath, '_blank');
+    const filePath = `/forms/${form.fileName}`;
+    
+    if (form.fileType === 'DOCX' || form.fileName.endsWith('.docx')) {
+      // Use Microsoft Office Online Viewer for Word documents
+      const viewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(window.location.origin + filePath)}`;
+      window.open(viewerUrl, '_blank');
+    } else {
+      // Open PDF directly
+      window.open(filePath, '_blank');
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
