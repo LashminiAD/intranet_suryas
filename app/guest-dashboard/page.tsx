@@ -6,18 +6,61 @@ import { useRouter } from 'next/navigation';
 import MainLayout from '@/components/main-layout';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Heart, Users, HelpCircle, Mail, Phone } from 'lucide-react';
+import { Heart, Users, HelpCircle, Mail, Phone, Send } from 'lucide-react';
+import { toast } from 'sonner';
 import { EventsCarousel } from '@/components/events-carousel';
 
 export default function GuestDashboard() {
   const { isAuthenticated, user } = useAuth();
   const router = useRouter();
+  const [inquiryMessage, setInquiryMessage] = useState('');
+  const [inquirySubject, setInquirySubject] = useState('');
+  const [isSubmittingInquiry, setIsSubmittingInquiry] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) {
       router.push('/login');
     }
   }, [isAuthenticated, router]);
+
+  const handleInquirySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!inquirySubject.trim() || !inquiryMessage.trim()) {
+      toast.error('Please fill in both subject and message');
+      return;
+    }
+
+    setIsSubmittingInquiry(true);
+
+    try {
+      const response = await fetch('/api/guest/inquiry', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          guestId: user?.id,
+          guestName: user?.fullName,
+          guestEmail: user?.email,
+          subject: inquirySubject,
+          message: inquiryMessage,
+          timestamp: new Date().toISOString(),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to submit inquiry');
+      }
+
+      toast.success('Your inquiry has been sent to admin!');
+      setInquirySubject('');
+      setInquiryMessage('');
+    } catch (error) {
+      console.error('Inquiry submission error:', error);
+      toast.error('Failed to send inquiry. Please try again.');
+    } finally {
+      setIsSubmittingInquiry(false);
+    }
+  };
 
   if (!isAuthenticated) {
     return <div>Loading...</div>;
@@ -75,17 +118,14 @@ export default function GuestDashboard() {
 
         {/* Company Information & Contact */}
         <Card className="bg-white p-8">
-          <h2 className="text-2xl font-bold text-slate-900 mb-6">About SURYA'S MiB</h2>
+          <h2 className="text-2xl font-bold text-slate-900 mb-6">About Proposal</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div>
               <p className="text-slate-700 mb-4">
-                SURYA'S MiB ENTERPRISES is a registered UDYAM-MSME specializing in PCB implementation, solar panel
-                solutions, and digital services. Since 2022, we've been delivering innovative solutions with precision
-                and excellence.
+                Proposal is your guest-facing gateway to explore company services, partnerships, and opportunities.
               </p>
               <p className="text-slate-700">
-                <strong>Mission:</strong> To empower businesses with cutting-edge digital solutions and innovative PCB
-                designs.
+                <strong>Mission:</strong> Deliver clear and responsive communication for every visitor.
               </p>
             </div>
             <div className="space-y-4">
@@ -109,7 +149,7 @@ export default function GuestDashboard() {
         {/* Contact & Social Links */}
         <Card className="bg-gradient-to-r from-slate-900 to-blue-900 text-white p-8">
           <h2 className="text-2xl font-bold mb-6">Connect With Us</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <p className="text-sm text-blue-100 mb-2">LinkedIn</p>
               <a href="#" className="text-white hover:text-blue-300 font-medium break-all">
@@ -117,14 +157,10 @@ export default function GuestDashboard() {
               </a>
             </div>
             <div>
-              <p className="text-sm text-blue-100 mb-2">Email</p>
-              <a href="mailto:suryas@suryas.in" className="text-white hover:text-blue-300 font-medium">
-                suryas@suryas.in
+              <p className="text-sm text-blue-100 mb-2">Instagram</p>
+              <a href="#" className="text-white hover:text-blue-300 font-medium">
+                @suryas_mib
               </a>
-            </div>
-            <div>
-              <p className="text-sm text-blue-100 mb-2">WhatsApp</p>
-              <p className="text-white">+91 81242 27370</p>
             </div>
           </div>
         </Card>
@@ -150,6 +186,55 @@ export default function GuestDashboard() {
               <p className="text-blue-900 font-semibold">{user?.id}</p>
             </div>
           </div>
+        </Card>
+
+        {/* Inquiry Section */}
+        <Card className="bg-white p-8 border-t-4 border-purple-500">
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2 mb-2">
+              <HelpCircle className="w-6 h-6 text-purple-600" />
+              Send an Inquiry to Admin
+            </h2>
+            <p className="text-slate-600 text-sm">Have any questions or need assistance? Submit your inquiry below and our admin team will get back to you.</p>
+          </div>
+
+          <form onSubmit={handleInquirySubmit} className="space-y-4">
+            {/* Subject */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Subject *</label>
+              <input
+                type="text"
+                placeholder="Enter inquiry subject"
+                value={inquirySubject}
+                onChange={(e) => setInquirySubject(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              />
+            </div>
+
+            {/* Message */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Message *</label>
+              <textarea
+                placeholder="Describe your inquiry..."
+                value={inquiryMessage}
+                onChange={(e) => setInquiryMessage(e.target.value)}
+                rows={6}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+              />
+            </div>
+
+            {/* Submit Button */}
+            <div className="flex justify-end">
+              <Button
+                type="submit"
+                disabled={isSubmittingInquiry}
+                className="bg-purple-600 hover:bg-purple-700 text-white font-semibold flex items-center gap-2"
+              >
+                <Send size={18} />
+                {isSubmittingInquiry ? 'Sending...' : 'Send Inquiry'}
+              </Button>
+            </div>
+          </form>
         </Card>
       </div>
     </MainLayout>

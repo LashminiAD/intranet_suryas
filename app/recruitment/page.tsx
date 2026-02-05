@@ -1,16 +1,23 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
 import MainLayout from '@/components/main-layout';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
-import { ExternalLink, MapPin, Briefcase } from 'lucide-react';
+import { ExternalLink, MapPin, Briefcase, Send } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function RecruitmentPage() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const router = useRouter();
+  const [requestData, setRequestData] = useState({
+    role: '',
+    experience: '',
+    message: '',
+  });
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -57,7 +64,7 @@ export default function RecruitmentPage() {
       <div className="max-w-6xl">
         <h1 className="text-3xl font-bold text-slate-900 mb-2">Recruitment & Careers</h1>
         <p className="text-slate-600 mb-8">
-          Join SURYA'S MiB ENTERPRISES and be part of our innovation journey
+          Join Proposal and be part of our innovation journey
         </p>
 
         {/* Information Banner */}
@@ -109,7 +116,7 @@ export default function RecruitmentPage() {
 
         {/* Why Join */}
         <Card className="bg-white p-8 mb-8">
-          <h2 className="text-2xl font-bold text-slate-900 mb-6">Why Join SURYA'S MiB?</h2>
+          <h2 className="text-2xl font-bold text-slate-900 mb-6">Why Join Proposal?</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <h3 className="font-semibold text-slate-900 mb-3">🚀 Growth & Learning</h3>
@@ -166,6 +173,72 @@ export default function RecruitmentPage() {
               </a>
             </p>
           </div>
+        </Card>
+
+        {/* Recruitment Request Form */}
+        <Card className="bg-white p-8">
+          <h2 className="text-2xl font-bold text-slate-900 mb-4">Recruitment Request</h2>
+          <p className="text-slate-600 mb-6">Submit your recruitment interest for admin review.</p>
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              if (!requestData.role || !requestData.message) {
+                toast.error('Please fill in role and message');
+                return;
+              }
+
+              const response = await fetch('/api/requests', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  type: 'recruitment',
+                  title: 'Recruitment Request',
+                  createdBy: user?.fullName || user?.username || 'User',
+                  createdById: user?.id,
+                  createdByRole: user?.role,
+                  createdByDesignation: user?.designation,
+                  target: 'admin',
+                  payload: {
+                    role: requestData.role,
+                    experience: requestData.experience,
+                    message: requestData.message,
+                    email: user?.email,
+                    submittedAt: new Date().toISOString(),
+                  },
+                }),
+              });
+
+              if (!response.ok) {
+                toast.error('Failed to submit recruitment request');
+                return;
+              }
+
+              toast.success('Recruitment request sent to Admin');
+              setRequestData({ role: '', experience: '', message: '' });
+            }}
+            className="space-y-4"
+          >
+            <Input
+              placeholder="Role you are applying for"
+              value={requestData.role}
+              onChange={(e) => setRequestData((prev) => ({ ...prev, role: e.target.value }))}
+            />
+            <Input
+              placeholder="Experience summary"
+              value={requestData.experience}
+              onChange={(e) => setRequestData((prev) => ({ ...prev, experience: e.target.value }))}
+            />
+            <textarea
+              placeholder="Tell us about your interest"
+              value={requestData.message}
+              onChange={(e) => setRequestData((prev) => ({ ...prev, message: e.target.value }))}
+              className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-blue-500"
+              rows={4}
+            />
+            <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
+              <Send size={16} className="mr-2" /> Submit Request
+            </Button>
+          </form>
         </Card>
       </div>
     </MainLayout>

@@ -26,16 +26,20 @@ export async function POST(request: NextRequest) {
     // Hash password
     const passwordHash = await bcrypt.hash(password, 10);
 
+    const isPrivileged = role === 'admin' || role === 'founder';
+
     // Create new user
     const newUser = {
       id: `user-${Date.now()}`,
       username,
       email,
       passwordHash,
-      role: role as 'admin' | 'user' | 'guest',
+      role: role as 'admin' | 'user' | 'guest' | 'founder',
       fullName,
       designation: designation || 'User',
       profilePictureUploaded: false,
+      status: isPrivileged ? 'active' : 'pending',
+      requestedAt: isPrivileged ? undefined : new Date().toISOString(),
       createdAt: new Date().toISOString(),
     };
 
@@ -47,7 +51,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       user: userWithoutPassword,
-      message: 'User registered successfully',
+      message: isPrivileged
+        ? 'User registered successfully'
+        : 'Access request submitted for admin approval',
     });
   } catch (error) {
     console.error('Registration error:', error);

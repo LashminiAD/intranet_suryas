@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
+import { NotificationProvider } from "@/lib/notification-context";
 import { Toaster } from "sonner";
 
 const geistSans = Geist({
@@ -15,8 +16,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SURYA'S MiB - Virtual Intranet",
-  description: "Enterprise Virtual Intranet Portal for SURYA'S MiB ENTERPRISES",
+  title: "Surya's MiB Enterprise - Portal",
+  description: 'Enterprise Virtual Intranet Portal',
 };
 
 export default function RootLayout({
@@ -30,8 +31,10 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <AuthProvider>
-          {children}
-          <Toaster position="top-right" />
+          <NotificationProvider>
+            {children}
+            <Toaster position="top-right" />
+          </NotificationProvider>
         </AuthProvider>
       </body>
     </html>

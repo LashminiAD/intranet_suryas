@@ -120,12 +120,18 @@ export default function SignUpPage() {
       }
 
       const data = await response.json();
-      toast.success('Registration successful! Redirecting to login...');
+      if (data.message?.toLowerCase().includes('approval')) {
+        toast.success(
+          'Access request sent to administrator@suryas.in. You will receive an email with a generated username and password once approved.'
+        );
+      } else {
+        toast.success('Registration successful! Redirecting to login...');
+      }
 
       // Redirect to login page
       setTimeout(() => {
         router.push('/login');
-      }, 1500);
+      }, 1800);
     } catch (error) {
       console.error('Registration error:', error);
       toast.error('An error occurred during registration');
@@ -142,11 +148,11 @@ export default function SignUpPage() {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-white rounded-full mb-4 shadow-lg overflow-hidden">
             <img
               src="https://surya-s.zohosites.in/Remini20220710111603029-removebg.png"
-              alt="SURYA'S MiB Logo"
+              alt="Proposal Logo"
               className="w-full h-full object-cover"
             />
           </div>
-          <h1 className="text-3xl font-bold text-white mb-2">SURYA'S MiB</h1>
+          <h1 className="text-3xl font-bold text-white mb-2">Proposal</h1>
           <p className="text-blue-200">Create Your Account</p>
         </div>
 

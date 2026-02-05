@@ -25,10 +25,12 @@ export default function LeaveFormPage() {
     fromDate: '',
     toDate: '',
     reason: '',
+    filledFormFile: null as File | null,
     medicalCertificate: null as File | null,
     medicalProof: null as File | null,
   });
 
+  const [filledFormFileName, setFilledFormFileName] = useState('');
   const [certificateFileName, setCertificateFileName] = useState('');
   const [medicalProofFileName, setMedicalProofFileName] = useState('');
 
@@ -45,6 +47,18 @@ export default function LeaveFormPage() {
 
   const handleSelectChange = (value: string) => {
     setFormData((prev) => ({ ...prev, leaveType: value }));
+  };
+
+  const handleFilledFormUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.type.includes('pdf') && !file.type.includes('image')) {
+        toast.error('Only PDF and image files are allowed');
+        return;
+      }
+      setFormData((prev) => ({ ...prev, filledFormFile: file }));
+      setFilledFormFileName(file.name);
+    }
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -71,7 +85,41 @@ export default function LeaveFormPage() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const isSickLeave = formData.leaveType === 'sick';
+  const isMedicalReason = /medical|doctor|hospital|surgery|fever|ill|sick|clinic/i.test(
+    formData.reason
+  );
+
+  const validateDates = () => {
+    if (!formData.fromDate || !formData.toDate) {
+      toast.error('Please select valid dates');
+      return false;
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const fromDate = new Date(formData.fromDate);
+    const toDate = new Date(formData.toDate);
+
+    if (Number.isNaN(fromDate.getTime()) || Number.isNaN(toDate.getTime())) {
+      toast.error('Invalid date');
+      return false;
+    }
+
+    if (fromDate < today || toDate < today) {
+      toast.error('Please select a valid future date');
+      return false;
+    }
+
+    if (toDate < fromDate) {
+      toast.error('To date must be after From date');
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!formData.name || !formData.fromDate || !formData.toDate || !formData.reason) {
@@ -79,8 +127,56 @@ export default function LeaveFormPage() {
       return;
     }
 
-    if (formData.leaveType === 'sick' && !formData.medicalCertificate) {
+    if (!formData.filledFormFile) {
+      toast.error('Please upload the filled leave form before submitting');
+      return;
+    }
+
+    if (!validateDates()) {
+      return;
+    }
+
+    if (isSickLeave && !formData.medicalCertificate) {
       toast.error('Medical Certificate is required for Sick Leave');
+      return;
+    }
+
+    const needsFounderSignature = /(freelancer|employee)/i.test(user?.designation || '');
+    const isAdminRequester = user?.role === 'admin';
+    const target = needsFounderSignature ? 'founder' : 'admin';
+    const finalTarget = isAdminRequester ? 'founder' : target;
+
+    const response = await fetch('/api/requests', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'leave',
+        title: `${formData.leaveType.toUpperCase()} Leave Request`,
+        createdBy: user?.fullName || user?.username || 'User',
+        createdById: user?.id,
+        createdByRole: user?.role,
+        createdByDesignation: user?.designation,
+        target: finalTarget,
+        payload: {
+          name: formData.name,
+          id: formData.id,
+          designation: formData.designation,
+          email: formData.email,
+          phone: formData.phone,
+          leaveType: formData.leaveType,
+          fromDate: formData.fromDate,
+          toDate: formData.toDate,
+          reason: formData.reason,
+          filledFormFileName: filledFormFileName,
+          medicalCertificateName: certificateFileName,
+          medicalProofName: medicalProofFileName,
+          submittedAt: new Date().toISOString(),
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      toast.error('Failed to submit leave request');
       return;
     }
 
@@ -207,9 +303,45 @@ export default function LeaveFormPage() {
                       />
                     </div>
 
+                    {/* Mandatory Filled Form Upload */}
+                    <div className="bg-amber-50 border border-amber-300 rounded-lg p-4">
+                      <div className="flex items-start gap-2 mb-3">
+                        <span className="text-amber-600 text-xl">⚠️</span>
+                        <div>
+                          <h3 className="font-semibold text-amber-900">Mandatory: Upload Filled Form</h3>
+                          <p className="text-sm text-amber-700 mt-1">
+                            Before submitting, download the Leave Form from the{' '}
+                            <a href="/forms-gallery" className="underline font-medium">Forms Gallery</a>, 
+                            fill it completely, and upload it here.
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="file"
+                          accept=".pdf,.jpg,.jpeg,.png"
+                          onChange={(e) => handleFilledFormUpload(e)}
+                          className="text-sm"
+                        />
+                        {filledFormFileName && (
+                          <span className="text-sm text-green-600 font-medium">
+                            ✓ {filledFormFileName}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Medical Proof/Certificate (PDF) - For long medical leaves</label>
-                      <p className="text-xs text-slate-500 mb-2">Upload medical certificate or proof if you have one (optional)</p>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">
+                        {isMedicalReason && !isSickLeave
+                          ? 'Medical Certificate (Optional)'
+                          : 'Medical Proof/Certificate (PDF) - For long medical leaves'}
+                      </label>
+                      <p className="text-xs text-slate-500 mb-2">
+                        {isMedicalReason && !isSickLeave
+                          ? 'Medical proof is optional for this request.'
+                          : 'Upload medical certificate or proof if you have one (optional)'}
+                      </p>
                       <div className="flex items-center gap-2">
                         <label className="flex-1 flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-purple-300 rounded-lg cursor-pointer hover:bg-purple-50 transition">
                           <Upload size={18} className="text-purple-600" />

@@ -23,17 +23,22 @@ export default function LoginPage() {
   const [showGuestModal, setShowGuestModal] = useState(false);
   const [showProfileSetup, setShowProfileSetup] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [guestData, setGuestData] = useState({
-    name: '',
-    designation: '',
-    companyName: '',
-    roleInCompany: '',
-    purposeOfVisit: '',
-  });
+  const [guestName, setGuestName] = useState('');
+  const [guestEmail, setGuestEmail] = useState('');
+  const [guestDesignation, setGuestDesignation] = useState('');
+  const [guestCompany, setGuestCompany] = useState('');
+  const [guestPurpose, setGuestPurpose] = useState('');
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+
+    // Handle guest login separately
+    if (role === 'guest') {
+      setLoading(false);
+      setShowGuestModal(true);
+      return;
+    }
 
     if (!username || !password) {
       toast.error('Please enter username and password');
@@ -72,17 +77,79 @@ export default function LoginPage() {
     }
   };
 
-  const handleGuestSubmit = (e: React.FormEvent) => {
+  const handleGuestSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!guestData.name || !guestData.designation || !guestData.companyName) {
-      toast.error('Please fill in all required fields');
+    if (!guestName.trim()) {
+      toast.error('Please enter your name');
       return;
     }
 
-    guestLogin(guestData);
+    if (!guestPurpose.trim()) {
+      toast.error('Please enter purpose of visit');
+      return;
+    }
+
+    // Generate a guest username with timestamp to make it unique
+    const guestUsername = `${guestName.trim().replace(/\s+/g, '_')}_${Date.now()}`;
+    const guestId = `guest-${Date.now()}`;
+    const loginTime = new Date().toISOString();
+
+    const logEntry = {
+      id: guestId,
+      name: guestName.trim(),
+      designation: guestDesignation || 'Guest',
+      companyName: guestCompany,
+      purpose: guestPurpose.trim(),
+      email: guestEmail,
+      visitDate: new Date().toLocaleDateString('en-IN'),
+      visitTime: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+    };
+
+    const existing = localStorage.getItem('guestLogins');
+    const parsed = existing ? JSON.parse(existing) : [];
+    localStorage.setItem('guestLogins', JSON.stringify([logEntry, ...parsed]));
+
+    // Track guest activity
+    try {
+      await fetch('/api/guest-activity', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'login',
+          guestId,
+          guestName: guestName.trim(),
+          email: guestEmail,
+          phone: '',
+          loginTime,
+        }),
+      });
+    } catch (error) {
+      console.error('Failed to track guest activity:', error);
+    }
+
+    // Store guestId in localStorage for logout tracking
+    localStorage.setItem('currentGuestId', guestId);
+    localStorage.setItem('guestLoginTime', loginTime);
+
+    guestLogin({
+      username: guestUsername,
+      details: {
+        fullName: guestName.trim(),
+        email: guestEmail || undefined,
+        designation: guestDesignation || 'Guest',
+        companyName: guestCompany,
+        purposeOfVisit: guestPurpose.trim(),
+        guestFormCompleted: true,
+      },
+    });
     toast.success('Welcome, Guest!');
     setShowGuestModal(false);
+    setGuestName('');
+    setGuestEmail('');
+    setGuestDesignation('');
+    setGuestCompany('');
+    setGuestPurpose('');
     router.push('/guest-dashboard');
   };
 
@@ -99,14 +166,14 @@ export default function LoginPage() {
                       className="w-full h-full object-cover"
                     />
                   </div>
-                  <h1 className="text-3xl font-bold text-white mb-2">SURYA'S MiB</h1>
+                  <h1 className="text-3xl font-bold text-white mb-2">SURYA'S MiB ENTERPRISE</h1>
                   <p className="text-blue-200">Virtual Intranet Portal</p>
                 </div>
 
               {/* Login Card */}
               <Card className="bg-white/95 backdrop-blur shadow-2xl">
           <div className="p-8">
-            <h2 className="text-2xl font-bold text-slate-800 mb-6">Login</h2>
+                  <h2 className="text-2xl font-bold text-slate-800 mb-6">Login</h2>
 
             <form onSubmit={handleLogin} className="space-y-4">
               {/* Username */}
@@ -152,7 +219,7 @@ export default function LoginPage() {
                   <SelectContent>
                     <SelectItem value="admin">Admin</SelectItem>
                     <SelectItem value="user">User</SelectItem>
-                    <SelectItem value="guest">Guest</SelectItem>
+                    <SelectItem value="founder">Founder</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -169,7 +236,7 @@ export default function LoginPage() {
 
             {/* Links */}
             <div className="mt-6 pt-6 border-t border-slate-200">
-              <div className="flex justify-between items-center text-sm">
+              <div className="flex justify-between items-center text-sm mb-4">
                 <a href="#" className="text-blue-600 hover:text-blue-700 font-medium hover:underline">
                   Forgot Password?
                 </a>
@@ -177,9 +244,21 @@ export default function LoginPage() {
                   onClick={() => router.push('/signup')}
                   className="text-blue-600 hover:text-blue-700 font-medium hover:underline"
                 >
-                  New User? Sign Up
+                  New User? SignUp
                 </button>
               </div>
+
+              {/* Guest Login Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  setRole('guest');
+                  setShowGuestModal(true);
+                }}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md transition-colors flex items-center justify-center gap-2"
+              >
+                Login as Guest
+              </button>
             </div>
           </div>
         </Card>
@@ -190,58 +269,60 @@ export default function LoginPage() {
       <Dialog open={showGuestModal} onOpenChange={setShowGuestModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Guest Access Registration</DialogTitle>
+            <DialogTitle>Guest Access Details</DialogTitle>
           </DialogHeader>
 
           <form onSubmit={handleGuestSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Full Name *</label>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Name *</label>
               <Input
-                type="text"
-                placeholder="Enter your name"
-                value={guestData.name}
-                onChange={(e) => setGuestData({ ...guestData, name: e.target.value })}
+                placeholder="Enter your full name"
+                value={guestName}
+                onChange={(e) => setGuestName(e.target.value)}
+                className="w-full border-slate-300"
+                autoFocus
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Designation *</label>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Email</label>
               <Input
-                type="text"
-                placeholder="e.g., Manager, Engineer"
-                value={guestData.designation}
-                onChange={(e) => setGuestData({ ...guestData, designation: e.target.value })}
+                type="email"
+                placeholder="your.email@example.com"
+                value={guestEmail}
+                onChange={(e) => setGuestEmail(e.target.value)}
+                className="w-full border-slate-300"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Company Name *</label>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Designation</label>
               <Input
-                type="text"
-                placeholder="Enter your company"
-                value={guestData.companyName}
-                onChange={(e) => setGuestData({ ...guestData, companyName: e.target.value })}
+                placeholder="Your current role"
+                value={guestDesignation}
+                onChange={(e) => setGuestDesignation(e.target.value)}
+                className="w-full border-slate-300"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Role in Company</label>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Company Name</label>
               <Input
-                type="text"
-                placeholder="e.g., Team Lead"
-                value={guestData.roleInCompany}
-                onChange={(e) => setGuestData({ ...guestData, roleInCompany: e.target.value })}
+                placeholder="Company or organization"
+                value={guestCompany}
+                onChange={(e) => setGuestCompany(e.target.value)}
+                className="w-full border-slate-300"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Purpose of Visit</label>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Purpose of Visit *</label>
               <textarea
-                placeholder="Describe your purpose"
-                value={guestData.purposeOfVisit}
-                onChange={(e) => setGuestData({ ...guestData, purposeOfVisit: e.target.value })}
+                placeholder="Please describe your purpose of visit..."
+                value={guestPurpose}
+                onChange={(e) => setGuestPurpose(e.target.value)}
                 className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                rows={3}
+                rows={4}
               />
             </div>
 
@@ -249,7 +330,15 @@ export default function LoginPage() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setShowGuestModal(false)}
+                onClick={() => {
+                  setShowGuestModal(false);
+                  setGuestName('');
+                  setGuestEmail('');
+                  setGuestDesignation('');
+                  setGuestCompany('');
+                  setGuestRole('');
+                  setGuestPurpose('');
+                }}
                 className="flex-1"
               >
                 Cancel

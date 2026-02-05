@@ -18,7 +18,6 @@ export default function GuestPurposeModal({ isOpen, onClose }: GuestPurposeModal
   const [name, setName] = useState(user?.fullName || '');
   const [designation, setDesignation] = useState('');
   const [companyName, setCompanyName] = useState('');
-  const [companyRole, setCompanyRole] = useState('');
   const [purpose, setPurpose] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -39,12 +38,25 @@ export default function GuestPurposeModal({ isOpen, onClose }: GuestPurposeModal
     }
 
     try {
+      const logEntry = {
+        id: `guest-${Date.now()}`,
+        name,
+        designation: designation || 'Guest',
+        companyName,
+        purpose,
+        visitDate: new Date().toLocaleDateString('en-IN'),
+        visitTime: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+      };
+
+      const existing = localStorage.getItem('guestLogins');
+      const parsed = existing ? JSON.parse(existing) : [];
+      localStorage.setItem('guestLogins', JSON.stringify([logEntry, ...parsed]));
+
       // Save guest details to profile and mark guest form completed
       await updateProfile({
         fullName: name,
         designation: designation || 'Guest',
         companyName,
-        companyRole,
         purposeOfVisit: purpose,
         profilePhoto: '/default-admin.svg',
         profilePictureUploaded: true,
@@ -83,11 +95,6 @@ export default function GuestPurposeModal({ isOpen, onClose }: GuestPurposeModal
           <div>
             <Label className="block text-sm font-medium text-slate-700 mb-2">Company Name</Label>
             <Input value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="Company name" />
-          </div>
-
-          <div>
-            <Label className="block text-sm font-medium text-slate-700 mb-2">Company Role</Label>
-            <Input value={companyRole} onChange={(e) => setCompanyRole(e.target.value)} placeholder="Your role at the company" />
           </div>
 
           <div>

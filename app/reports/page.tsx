@@ -45,11 +45,38 @@ export default function ReportsPage() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!formData.reportContent || !formData.reportFile) {
       toast.error('Please fill in all required fields');
+      return;
+    }
+
+    const response = await fetch('/api/requests', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'report',
+        title: `${reportType === 'weekly' ? 'Weekly' : 'Monthly'} Report`,
+        createdBy: user?.fullName || user?.username || 'User',
+        createdById: user?.id,
+        createdByRole: user?.role,
+        createdByDesignation: user?.designation,
+        target: 'founder',
+        payload: {
+          name: formData.name,
+          id: formData.id,
+          reportContent: formData.reportContent,
+          reportFileName: formData.reportFileName,
+          reportType,
+          submittedAt: new Date().toISOString(),
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      toast.error('Failed to submit report');
       return;
     }
 

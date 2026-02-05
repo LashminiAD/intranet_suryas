@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
 import MainLayout from '@/components/main-layout';
@@ -8,14 +8,22 @@ import { Card } from '@/components/ui/card';
 import { Mail, Linkedin, User } from 'lucide-react';
 
 export default function AboutFounderPage() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const router = useRouter();
+  const [guestLogins, setGuestLogins] = useState<any[]>([]);
 
   useEffect(() => {
     if (!isAuthenticated) {
       router.push('/login');
     }
   }, [isAuthenticated, router]);
+
+  useEffect(() => {
+    const stored = localStorage.getItem('guestLogins');
+    if (stored) {
+      setGuestLogins(JSON.parse(stored));
+    }
+  }, []);
 
   const logoImg = 'https://surya-s.zohosites.in/Remini20220710111603029-removebg.png';
   const founderImg = 'https://surya-s.zohosites.in/OWNER.jpg';
@@ -32,26 +40,26 @@ export default function AboutFounderPage() {
       designation: 'Admin',
       email: 'administrator@suryas.in',
       qualification: 'B.Com., MBA.',
-      image: null,
+      image: 'https://surya-s.zohosites.in/p.jpeg',
     },
     {
       name: 'Mr. V. HAREESH DECE.',
       designation: 'Technical Team',
       email: 'technicalteam@suryas.in',
-      image: null,
+      image: 'https://surya-s.zohosites.in/WhatsApp%20Image%202024-03-12%20at%201.51.39%20PM.jpeg',
     },
     {
       name: 'Mr. N. Prabhu',
       designation: 'PCB Designer - C',
       qualification: 'B.E.(ECE)',
       email: 'pcb.designers@suryas.in',
-      image: null,
+      image: 'https://surya-s.zohosites.in/WhatsApp%20Image%202025-10-06%20at%207.26.00%20AM.jpeg',
     },
     {
       name: 'Mr. V. Santhana Kumar B.E.(ECE).',
       designation: 'Technical Team (i.c)',
       email: 'technicalteam@suryas.in',
-      image: null,
+      image: 'https://surya-s.zohosites.in/50715.jpg',
     },
     {
       name: 'Mr. Manigandan C DECE.',
@@ -65,6 +73,8 @@ export default function AboutFounderPage() {
     return <div>Loading...</div>;
   }
 
+  const canMonitorGuests = user?.role === 'admin' || user?.role === 'founder';
+
   return (
     <MainLayout>
       <div className="max-w-6xl space-y-8">
@@ -72,12 +82,12 @@ export default function AboutFounderPage() {
         <div className="bg-gradient-to-r from-blue-600 to-slate-800 text-white p-12 rounded-lg shadow-lg">
           <div className="max-w-4xl mx-auto flex items-center gap-8">
             <div className="w-32 h-32 bg-white rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
-              <img src={logoImg} alt="SURYA'S MiB Logo" className="w-full h-full object-cover" />
+              <img src={logoImg} alt="Proposal Logo" className="w-full h-full object-cover" />
             </div>
             <div>
-              <h1 className="text-4xl font-bold mb-4">SURYA'S MiB ENTERPRISES</h1>
+              <h1 className="text-4xl font-bold mb-4">Proposal</h1>
               <p className="text-xl text-blue-100 mb-6">
-                "Bringing Sunshine to Your World: SURYA'S MiB - Illuminating Lives with Innovation!"
+                "Bringing clarity and collaboration: Proposal - Illuminating Teams with Innovation!"
               </p>
               <p className="text-lg font-semibold text-blue-50">Founded by: Golla Kumar Bharath</p>
             </div>
@@ -95,12 +105,12 @@ export default function AboutFounderPage() {
               />
               <h3 className="text-2xl font-bold text-slate-900 text-center">Mr. Golla Kumar Bharath</h3>
               <p className="text-lg font-semibold text-blue-600 text-center mt-2">Founder & Proprietor</p>
-              <p className="text-sm text-slate-600 text-center mt-1">SURYA'S MiB Enterprise</p>
+              <p className="text-sm text-slate-600 text-center mt-1">Proposal Enterprise</p>
             </div>
             <div className="md:col-span-2 space-y-4">
               <div>
                 <h4 className="font-bold text-slate-900 mb-2">📚 Educational Background</h4>
-                <p className="text-slate-700">B.Tech in Electronics and Communication Engineering (E&CE)</p>
+                <p className="text-slate-700">DEEE (Diploma in Electrical and Electronics Engineering)</p>
               </div>
               <div>
                 <h4 className="font-bold text-slate-900 mb-2">🎯 Expertise & Specialization</h4>
@@ -120,11 +130,38 @@ export default function AboutFounderPage() {
           </div>
         </Card>
 
+        {canMonitorGuests && (
+          <Card className="bg-white p-6">
+            <h2 className="text-xl font-bold text-slate-900 mb-4">Guest Login Monitoring</h2>
+            {guestLogins.length === 0 ? (
+              <p className="text-sm text-slate-600">No guest logins recorded yet.</p>
+            ) : (
+              <div className="space-y-3">
+                {guestLogins.map((guest) => (
+                  <div key={guest.id} className="border rounded-lg p-4">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className="text-sm font-semibold text-slate-900">{guest.name}</p>
+                        <p className="text-xs text-slate-500">{guest.companyName || 'N/A'} • {guest.companyRole || 'N/A'}</p>
+                      </div>
+                      <div className="text-xs text-slate-500">
+                        {guest.visitDate} • {guest.visitTime}
+                      </div>
+                    </div>
+                    <p className="text-sm text-slate-700 mt-2">Purpose: {guest.purpose}</p>
+                    {guest.email && <p className="text-xs text-slate-500 mt-1">Email: {guest.email}</p>}
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
+        )}
+
         {/* Founder's Message */}
         <Card className="bg-blue-600 text-white p-8 border-l-4 border-yellow-400 shadow-lg">
           <div className="max-w-3xl">
             <p className="text-lg italic mb-4">
-              "SURYA'S MiB Enterprise was founded with a vision to bridge the gap between academic knowledge and 
+              "Proposal Enterprise was founded with a vision to bridge the gap between academic knowledge and 
               real-world technical skills. Our focus is on innovation, practical exposure, and creating opportunities 
               for students and young professionals to grow through hands-on learning, R&D projects, and industry-oriented training."
             </p>
@@ -153,7 +190,7 @@ export default function AboutFounderPage() {
               </div>
               <div>
                 <p className="text-sm text-slate-600">Headquarters</p>
-                <p className="font-semibold text-slate-900">Hyderabad, India</p>
+                <p className="font-semibold text-slate-900">Thiruvallur, Tamil Nadu</p>
               </div>
               <div>
                 <p className="text-sm text-slate-600">Classification</p>
@@ -172,10 +209,10 @@ export default function AboutFounderPage() {
             </div>
             <p className="text-sm text-slate-700 space-y-2">
               <div><strong>Website:</strong> <a href="https://surya-s.zohosites.in" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">https://surya-s.zohosites.in</a></div>
-              <div><strong>Address:</strong> Hyderabad, India</div>
-              <div><strong>Proprietor Email:</strong> proprietor@suryas.in</div>
-              <div><strong>Phone:</strong> +91 63859 07201</div>
-              <div><strong>Phone:</strong> +91 80724 87097</div>
+              <div><strong>Registered Address:</strong> No.251, Ramacharapuram, Soorapundi, Eguvarpalayam, Thiruvallur, Tamil Nadu - 601201, India</div>
+              <div><strong>Phone:</strong> <a href="tel:+916383014533" className="text-blue-600 hover:underline">+91 63830 14533</a></div>
+              <div><strong>WhatsApp:</strong> <a href="https://wa.me/918124227370" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">+91 81242 27370</a> / <a href="https://wa.me/918072487097" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">80724 87097</a></div>
+              <div><strong>Proprietor Email:</strong> <a href="mailto:proprietor@suryas.in" className="text-blue-600 hover:underline">proprietor@suryas.in</a></div>
             </p>
           </Card>
 
@@ -185,9 +222,10 @@ export default function AboutFounderPage() {
               <h4 className="font-semibold text-slate-900">Department Contacts</h4>
             </div>
             <p className="text-sm text-slate-700 space-y-1">
+              <div><strong>Customer Care:</strong> proprietor@suryas.in</div>
               <div><strong>Technical Team:</strong> technicalteam@suryas.in</div>
               <div><strong>PCB Designers:</strong> pcb.designers@suryas.in</div>
-              <div><strong>Administrator:</strong> administrator@suryas.in</div>
+              <div><strong>Software Team:</strong> softwareteam@suryas.in</div>
             </p>
           </Card>
         </div>
@@ -204,6 +242,7 @@ export default function AboutFounderPage() {
                       src={member.image}
                       alt={member.name}
                       className="w-24 h-24 rounded-full object-cover border-4 border-blue-400"
+                      style={{ objectPosition: 'center 0%' }}
                     />
                   ) : (
                     <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center border-4 border-blue-400">
@@ -267,14 +306,8 @@ export default function AboutFounderPage() {
                   LinkedIn
                 </a>
                 <a href="https://www.instagram.com/suryas_mib_enterprises" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-pink-600 hover:text-pink-700 font-medium bg-white px-4 py-2 rounded-lg hover:shadow-md transition">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.057-1.645.069-4.849.069-3.204 0-3.584-.012-4.849-.069-3.259-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163C8.756 0 8.331.012 7.052.07 2.696.272.273 2.69.07 7.052.012 8.331 0 8.756 0 12c0 3.244.012 3.668.07 4.948.202 4.358 2.612 6.78 6.979 6.98 1.281.058 1.7.07 4.948.07 3.259 0 3.668-.012 4.948-.07 4.354-.2 6.782-2.617 6.979-6.98.058-1.28.07-1.704.07-4.948 0-3.244-.012-3.668-.07-4.948-.196-4.354-2.617-6.78-6.979-6.98C15.668.012 15.259 0 12 0z"/>
-                  </svg>
+                  <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e7/Instagram_logo_2016.svg/768px-Instagram_logo_2016.svg.png" alt="Instagram" className="w-5 h-5" />
                   Instagram
-                </a>
-                <a href="mailto:proprietor@suryas.in" className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium bg-white px-4 py-2 rounded-lg hover:shadow-md transition">
-                  <Mail size={20} />
-                  Email
                 </a>
               </div>
             </div>
@@ -288,9 +321,9 @@ export default function AboutFounderPage() {
                   <p className="font-semibold text-blue-600"><a href="https://surya-s.zohosites.in" target="_blank" rel="noopener noreferrer" className="hover:underline">https://surya-s.zohosites.in</a></p>
                 </div>
                 <div className="bg-white p-4 rounded-lg">
-                  <p className="text-sm text-slate-600">Phone Numbers</p>
-                  <p className="font-semibold text-slate-900">+91 63859 07201</p>
-                  <p className="font-semibold text-slate-900">+91 80724 87097</p>
+                  <p className="text-sm text-slate-600">Phone & WhatsApp</p>
+                  <p className="font-semibold text-slate-900">+91 63830 14533</p>
+                  <p className="font-semibold text-slate-900">+91 81242 27370 / 80724 87097</p>
                 </div>
               </div>
             </div>
@@ -310,7 +343,7 @@ export default function AboutFounderPage() {
                   <p className="text-sm text-slate-600">Ministry of MSME Registration</p>
                 </div>
               </div>
-              <p className="text-sm text-slate-700 mb-4">Official MSME certification document for SURYA'S MiB Enterprise</p>
+              <p className="text-sm text-slate-700 mb-4">Official MSME certification document for Proposal Enterprise</p>
               <button className="w-full bg-orange-500 hover:bg-orange-600 text-white font-medium py-2 px-4 rounded-lg transition">
                 📥 Download Certificate
               </button>
@@ -336,9 +369,13 @@ export default function AboutFounderPage() {
                 />
               </div>
               
-              <button className="w-full bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded-lg transition">
+              <a 
+                href="https://via.placeholder.com/400x300?text=UDYAM+Certificate"
+                download="UDYAM_Registration_Certificate.png"
+                className="w-full bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded-lg transition block text-center"
+              >
                 📥 Download Certificate
-              </button>
+              </a>
             </div>
           </div>
         </Card>
@@ -346,7 +383,7 @@ export default function AboutFounderPage() {
         {/* Footer */}
         <div className="text-center text-sm text-slate-600 py-4 border-t border-slate-200">
           <p>
-            <strong>SURYA'S MiB ENTERPRISES</strong> - Transforming ideas into high-performance Electronics designs
+            <strong>Proposal</strong> - Transforming ideas into high-performance Electronics designs
             for seamless innovation and success.
           </p>
           <p className="mt-2">All Rights Reserved © 2022 | www.suryas.in</p>

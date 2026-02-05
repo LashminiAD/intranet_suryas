@@ -22,6 +22,18 @@ export default function FormsGalleryPage() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [forms, setForms] = useState([
     {
+      id: 0,
+      name: 'Internal Renewal Form',
+      description: 'Admin-only internal renewal and financial tracking form',
+      fileSize: 'Access Restricted',
+      category: 'Admin',
+      fileType: 'PAGE',
+      fileName: 'Internal Renewal',
+      uploadedDate: '2026-02-04',
+      adminOnly: true,
+      href: '/internal-revenue',
+    },
+    {
       id: 1,
       name: 'Application Form',
       description: 'General application form for various purposes',
@@ -170,9 +182,17 @@ export default function FormsGalleryPage() {
     file: null as File | null,
   });
 
-  const categories = ['all', 'HR', 'Finance', 'Projects', 'Admin', 'Events', 'Legal', 'Training', 'Reports'];
+  const allCategories = ['all', 'HR', 'Finance', 'Projects', 'Admin', 'Events', 'Legal', 'Training', 'Reports'];
+  const categories = user?.role === 'admin' || user?.role === 'founder'
+    ? allCategories
+    : allCategories.filter((category) => category !== 'Admin');
 
   const handleDownload = (form: any) => {
+    if (form.href) {
+      window.open(form.href, '_blank');
+      toast.success(`Opened: ${form.name}`);
+      return;
+    }
     const link = document.createElement('a');
     link.href = `/forms/${form.fileName}`;
     link.download = form.fileName;
@@ -183,6 +203,10 @@ export default function FormsGalleryPage() {
   };
 
   const handleView = (form: any) => {
+    if (form.href) {
+      window.open(form.href, '_blank');
+      return;
+    }
     const filePath = `/forms/${form.fileName}`;
     window.open(filePath, '_blank');
   };
@@ -226,9 +250,13 @@ export default function FormsGalleryPage() {
     toast.success('Form deleted successfully');
   };
 
-  const filteredForms = selectedCategory === 'all' 
-    ? forms 
-    : forms.filter(form => form.category === selectedCategory);
+  const visibleForms = user?.role === 'admin' || user?.role === 'founder'
+    ? forms
+    : forms.filter((form: any) => !form.adminOnly && form.category !== 'Admin');
+
+  const filteredForms = selectedCategory === 'all'
+    ? visibleForms
+    : visibleForms.filter((form) => form.category === selectedCategory);
 
   const getCategoryColor = (category: string) => {
     const colors: Record<string, string> = {

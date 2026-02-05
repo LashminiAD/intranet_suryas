@@ -5,20 +5,25 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 export interface User {
   username: string;
   email: string;
-  role: 'admin' | 'user' | 'guest';
+  role: 'admin' | 'user' | 'guest' | 'founder';
   designation?: string;
   id?: string;
   profilePhoto?: string;
   fullName?: string;
   profilePictureUploaded?: boolean;
+  phone?: string;
+  companyName?: string;
+  companyRole?: string;
+  purposeOfVisit?: string;
+  guestFormCompleted?: boolean;
 }
 
 interface AuthContextType {
   user: User | null;
   login: (username: string, password: string, role: string) => void;
-  guestLogin: (guestData: any) => void;
+  guestLogin: (payload: { username: string; details: Partial<User> }) => void;
   logout: () => void;
-  updateProfile: (data: any) => void;
+  updateProfile: (data: any) => Promise<User | null>;
   isAuthenticated: boolean;
 }
 
@@ -79,31 +84,77 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const guestLogin = (guestData: any) => {
+  const guestLogin = ({ username, details }: { username: string; details: Partial<User> }) => {
+    const normalized = username || details.fullName || 'Guest';
     const newUser: User = {
-      username: guestData.name,
-      email: `${guestData.name.toLowerCase().replace(/\s+/g, '.')}@guest.suryasmib.com`,
+      username: normalized,
+      email: details.email || `${normalized.toLowerCase().replace(/\s+/g, '.')}@guest.suryasmib.com`,
       role: 'guest',
-      designation: guestData.designation,
       id: generateUserId('guest'),
-      fullName: guestData.name,
+      fullName: details.fullName || normalized,
+      designation: details.designation || 'Guest',
+      ...details,
+      profilePictureUploaded: true,
+      guestFormCompleted: true as any,
     };
 
     setUser(newUser);
     localStorage.setItem('currentUser', JSON.stringify(newUser));
   };
 
-  const logout = () => {
+  const logout = async () => {
+    // Track guest logout if user is a guest
+    if (user?.role === 'guest') {
+      const guestId = localStorage.getItem('currentGuestId');
+      if (guestId) {
+        try {
+          await fetch('/api/guest-activity', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'logout',
+              guestId,
+              logoutTime: new Date().toISOString(),
+            }),
+          });
+        } catch (error) {
+          console.error('Failed to track guest logout:', error);
+        }
+        localStorage.removeItem('currentGuestId');
+        localStorage.removeItem('guestLoginTime');
+      }
+    }
+
     setUser(null);
     localStorage.removeItem('currentUser');
   };
 
-  const updateProfile = (data: any) => {
-    if (user) {
-      const updatedUser = { ...user, ...data };
-      setUser(updatedUser);
-      localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+  const updateProfile = async (data: any) => {
+    if (!user) {
+      return null;
     }
+
+    let nextUser: User = { ...user, ...data };
+
+    if (user.role !== 'guest') {
+      const response = await fetch('/api/profile/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentUsername: user.username, updates: data }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update profile');
+      }
+
+      const result = await response.json();
+      nextUser = { ...nextUser, ...result.user };
+    }
+
+    setUser(nextUser);
+    localStorage.setItem('currentUser', JSON.stringify(nextUser));
+    return nextUser;
   };
 
   return (

@@ -22,6 +22,8 @@ export default function TAClaimPage(): React.ReactNode {
     claimType: 'expenses',
     amount: '',
     description: '',
+    filledFormFile: null as File | null,
+    filledFormFileName: '',
     billFile: null as File | null,
     billFileName: '',
   });
@@ -37,26 +39,64 @@ export default function TAClaimPage(): React.ReactNode {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, fileType: 'form' | 'proof') => {
     const file = e.target.files?.[0];
     if (file) {
       if (!file.type.includes('pdf') && !file.type.includes('image')) {
         toast.error('Only PDF and image files are allowed');
         return;
       }
-      setFormData((prev) => ({ ...prev, billFile: file, billFileName: file.name }));
+      if (fileType === 'form') {
+        setFormData((prev) => ({ ...prev, filledFormFile: file, filledFormFileName: file.name }));
+      } else {
+        setFormData((prev) => ({ ...prev, billFile: file, billFileName: file.name }));
+      }
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.amount || !formData.description || !formData.billFile) {
-      toast.error('Please fill in all required fields');
+    if (!formData.amount || !formData.description || !formData.filledFormFile) {
+      toast.error('Please fill in all required fields and upload the filled form');
       return;
     }
 
-    toast.success('TA Claim submitted successfully! Sent to Admin.');
+    const needsFounderSignature = /(freelancer|employee)/i.test(user?.designation || '');
+    const target = needsFounderSignature ? 'founder' : 'admin';
+
+    const response = await fetch('/api/requests', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'ta',
+        title: 'TA Claim Request',
+        createdBy: user?.fullName || user?.username || 'User',
+        createdById: user?.id,
+        createdByRole: user?.role,
+        createdByDesignation: user?.designation,
+        target,
+        payload: {
+          name: formData.name,
+          id: formData.id,
+          designation: formData.designation,
+          email: formData.email,
+          claimType: formData.claimType,
+          amount: formData.amount,
+          description: formData.description,
+          filledFormFileName: formData.filledFormFileName,
+          billFileName: formData.billFileName,
+          submittedAt: new Date().toISOString(),
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      toast.error('Failed to submit TA claim');
+      return;
+    }
+
+    toast.success('TA Claim submitted successfully!');
     setFormData({
       name: user?.fullName || '',
       id: user?.id || '',
@@ -65,6 +105,8 @@ export default function TAClaimPage(): React.ReactNode {
       claimType: 'expenses',
       amount: '',
       description: '',
+      filledFormFile: null,
+      filledFormFileName: '',
       billFile: null,
       billFileName: '',
     });
@@ -162,16 +204,42 @@ export default function TAClaimPage(): React.ReactNode {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Bill/Receipt Proof (PDF or Image) *</label>
+                <div className="bg-amber-50 border border-amber-300 rounded-lg p-4">
+                  <p className="text-sm font-semibold text-amber-900 mb-2">⚠️ Mandatory: Upload Filled Form</p>
+                  <p className="text-xs text-amber-800 mb-3">
+                    Before submitting, download the TA Claim form from the <a href="/forms-gallery" className="underline font-medium">Forms Gallery</a>, fill it completely, and upload it here.
+                  </p>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Filled TA Claim Form (PDF or Image) *</label>
                   <div className="flex items-center gap-2">
-                    <label className="flex-1 flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-blue-300 rounded-lg cursor-pointer hover:bg-blue-50 transition">
-                      <Upload size={18} className="text-blue-600" />
-                      <span className="text-sm text-blue-600 font-medium">Click to upload file</span>
+                    <label className="flex-1 flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-amber-400 rounded-lg cursor-pointer hover:bg-amber-100 transition">
+                      <Upload size={18} className="text-amber-700" />
+                      <span className="text-sm text-amber-700 font-medium">Click to upload filled form</span>
                       <input
                         type="file"
                         accept=".pdf,.jpg,.jpeg,.png"
-                        onChange={handleFileUpload}
+                        onChange={(e) => handleFileUpload(e, 'form')}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                  {formData.filledFormFileName && (
+                    <div className="mt-2 flex items-center gap-2 text-sm text-green-700 bg-green-50 p-2 rounded">
+                      <FileUp size={16} />
+                      {formData.filledFormFileName}
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Supporting Proofs (Receipts, Bills, etc.) - Optional</label>
+                  <div className="flex items-center gap-2">
+                    <label className="flex-1 flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-blue-300 rounded-lg cursor-pointer hover:bg-blue-50 transition">
+                      <Upload size={18} className="text-blue-600" />
+                      <span className="text-sm text-blue-600 font-medium">Click to upload supporting documents</span>
+                      <input
+                        type="file"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        onChange={(e) => handleFileUpload(e, 'proof')}
                         className="hidden"
                       />
                     </label>

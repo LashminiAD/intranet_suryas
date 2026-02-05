@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { Button } from '@/components/ui/button';
 import { QRCodeModal } from '@/components/qr-code-modal';
+import { ProfileSetupModal } from '@/components/profile-setup-modal';
+import { NotificationBell } from '@/components/notification-bell';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,6 +34,7 @@ import {
   User,
   Share2,
   CreditCard,
+  Bell,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -46,9 +49,17 @@ export default function MainLayout({ children }: MainLayoutProps) {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [selectedQR, setSelectedQR] = useState<any>(null);
   const [showQRModal, setShowQRModal] = useState(false);
+  const [showProfileEditor, setShowProfileEditor] = useState(false);
+  const [accessRequests, setAccessRequests] = useState<any[]>([]);
+  const [approverEmail, setApproverEmail] = useState<string>('');
+  const [loadingRequests, setLoadingRequests] = useState(false);
+
+  const isFounder = user?.role === 'founder';
+  const isAdmin = user?.role === 'admin' || isFounder;
+  const isGuest = user?.role === 'guest';
 
   const paymentMethods = [
-    { id: 'upi', name: 'UPI Payment', image: '/qr-upi.svg', upi: 'Q946965798@ybl' },
+    { id: 'upi', name: 'UPI Payment', image: '/qr-upi.jpeg', upi: 'Q946965798@ybl' },
   ];
 
   const handleQRClick = (method: any) => {
@@ -61,6 +72,30 @@ export default function MainLayout({ children }: MainLayoutProps) {
     return () => clearInterval(timer);
   }, []);
 
+  const fetchAccessRequests = async () => {
+    if (!isAdmin) return;
+    setLoadingRequests(true);
+    try {
+      const response = await fetch('/api/admin/access-requests');
+      if (!response.ok) {
+        throw new Error('Failed to load access requests');
+      }
+      const data = await response.json();
+      setAccessRequests(data.requests || []);
+      setApproverEmail(data.approver || '');
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoadingRequests(false);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchAccessRequests();
+    const interval = setInterval(fetchAccessRequests, 30000);
+    return () => clearInterval(interval);
+  }, [isAdmin]);
+
   const handleLogout = () => {
     logout();
     toast.success('Logged out successfully');
@@ -71,9 +106,6 @@ export default function MainLayout({ children }: MainLayoutProps) {
     return <>{children}</>;
   }
 
-  const isAdmin = user.role === 'admin';
-  const isGuest = user.role === 'guest';
-
   const adminNavItems = [
     { label: 'Dashboard', icon: Home, href: '/admin-dashboard' },
     { label: 'Leave Management', icon: FileText, href: '/admin/leave-management' },
@@ -81,6 +113,10 @@ export default function MainLayout({ children }: MainLayoutProps) {
     { label: 'Project Approvals', icon: FolderPlus, href: '/admin/project-approvals' },
     { label: 'User Management', icon: Users, href: '/admin/user-management' },
     { label: 'Reports', icon: BarChart3, href: '/admin/reports' },
+    { label: 'Forms', icon: Download, href: '/forms-gallery' },
+    { label: 'Internal Renewal', icon: DollarSignIcon, href: '/internal-revenue' },
+    { label: 'Contacts', icon: Users, href: '/contact' },
+    { label: 'Circulars', icon: FileText, href: '/circulars' },
     { label: 'Recruitment', icon: Users, href: '/recruitment' },
     { label: 'Sponsorship', icon: Heart, href: '/sponsorship' },
   ];
@@ -94,13 +130,13 @@ export default function MainLayout({ children }: MainLayoutProps) {
     { label: 'Dashboard', icon: Home, href: '/dashboard' },
     { label: 'Leave Form', icon: FileText, href: '/leave-form' },
     { label: 'TA Claim', icon: DollarSign, href: '/ta-claim' },
-    { label: 'Project Creation', icon: FolderPlus, href: '/project-creation' },
+    { label: 'Proposal', icon: FolderPlus, href: '/project-creation' },
     { label: 'Reports', icon: BarChart3, href: '/reports' },
     { label: 'Recruitment', icon: Users, href: '/recruitment' },
     { label: 'Sponsorship', icon: Heart, href: '/sponsorship' },
     { label: 'Forms', icon: Download, href: '/forms-gallery' },
+    { label: 'Contacts', icon: Users, href: '/contact' },
     { label: 'Company Info', icon: Award, href: '/company-content' },
-    { label: 'Internal Revenue', icon: DollarSignIcon, href: '/internal-revenue' },
     { label: 'Certificate Request', icon: Award, href: '/certificate-request' },
   ];
 
@@ -121,9 +157,9 @@ export default function MainLayout({ children }: MainLayoutProps) {
         <div className="p-4 border-b border-slate-700 flex items-center justify-between">
           <Link href="/dashboard" className="flex items-center gap-3 hover:opacity-80 transition">
             <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center overflow-hidden">
-              <img src={logoImg} alt="SURYA'S MiB" className="w-full h-full object-cover" />
+              <img src={logoImg} alt="SURYA'S MiB ENTERPRISE" className="w-full h-full object-cover" />
             </div>
-            {sidebarOpen && <span className="text-sm font-bold whitespace-nowrap">SURYA'S MiB</span>}
+            {sidebarOpen && <span className="text-sm font-bold whitespace-nowrap">SURYA'S MiB ENTERPRISE</span>}
           </Link>
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -185,7 +221,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
         <div className="border-t border-slate-700 p-3">
           {sidebarOpen && (
             <>
-              <p className="text-xs font-semibold text-slate-400 mb-3 px-1">💳 Payment Methods</p>
+              <p className="text-xs font-semibold text-slate-400 mb-3 px-1">Payment Methods</p>
               <div className="space-y-2">
                 {paymentMethods.map((method) => (
                   <button
@@ -251,79 +287,171 @@ export default function MainLayout({ children }: MainLayoutProps) {
             </div>
 
             {/* User Profile Dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="flex items-center gap-3">
-                  {isGuest ? (
-                    <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center">
-                      <User size={20} className="text-white" />
-                    </div>
-                  ) : isAdmin ? (
-                    <img
-                      src={user.profilePhoto || '/default-admin.svg'}
-                      alt="Admin Profile"
-                      className="w-10 h-10 rounded-full object-cover border-2 border-blue-400"
-                    />
-                  ) : (
-                    <img
-                      src={user.profilePhoto || 'https://via.placeholder.com/40'}
-                      alt="Profile"
-                      className="w-10 h-10 rounded-full object-cover border-2 border-blue-400"
-                    />
-                  )}
-                  <div className="hidden sm:block text-left">
-                    <p className="text-sm font-semibold text-slate-900">{user.fullName || user.username}</p>
-                    <p className="text-xs text-slate-500">{isAdmin ? 'Administrator' : user.designation}</p>
-                  </div>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-64">
-                <DropdownMenuLabel>User Profile</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {!isGuest && (
-                  <div className="px-4 py-3 text-center mb-2">
-                    <img src={logoImg} alt="Logo" className="h-8 w-auto mx-auto mb-2" />
-                    <p className="text-xs text-slate-500">SURYA'S MiB</p>
-                  </div>
-                )}
-                <div className="px-4 py-3 space-y-2">
-                  <div>
-                    <p className="text-xs text-slate-500">Full Name</p>
-                    <p className="text-sm font-semibold">{user.fullName || user.username}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500">ID Number</p>
-                    <p className="text-sm font-semibold font-mono">{user.id}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500">Designation</p>
-                    <p className="text-sm font-semibold">{user.designation}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500">Email</p>
-                    <p className="text-sm font-semibold text-blue-600">{user.email}</p>
-                  </div>
-                </div>
-                <DropdownMenuSeparator />
-                {isAdmin && (
-                  <>
-                    <DropdownMenuItem>
-                      <User size={16} className="mr-2" />
-                      Edit Profile
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <Share2 size={16} className="mr-2" />
-                      Management Console
-                    </DropdownMenuItem>
+            <div className="flex items-center gap-2">
+              {isAdmin && (
+                <DropdownMenu onOpenChange={(open) => open && fetchAccessRequests()}>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="relative">
+                      <Bell size={20} />
+                      {accessRequests.length > 0 && (
+                        <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] rounded-full px-1.5 py-0.5">
+                          {accessRequests.length}
+                        </span>
+                      )}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-80">
+                    <DropdownMenuLabel>Access Requests</DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                  </>
-                )}
-                <DropdownMenuItem onClick={handleLogout} className="text-red-600 cursor-pointer">
-                  <LogOut size={16} className="mr-2" />
-                  Logout
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                    {loadingRequests && (
+                      <div className="px-4 py-3 text-sm text-slate-500">Loading requests...</div>
+                    )}
+                    {!loadingRequests && accessRequests.length === 0 && (
+                      <div className="px-4 py-3 text-sm text-slate-500">No pending requests</div>
+                    )}
+                    {!loadingRequests && accessRequests.length > 0 && (
+                      <div className="space-y-3 px-3 pb-3">
+                        {accessRequests.map((request) => (
+                          <div key={request.id} className="border rounded-lg p-3">
+                            <p className="text-sm font-semibold text-slate-900">{request.fullName}</p>
+                            <p className="text-xs text-slate-500">{request.email}</p>
+                            <p className="text-xs text-slate-400 mt-1">
+                              Requested: {new Date(request.requestedAt).toLocaleString('en-IN')}
+                            </p>
+                            <div className="mt-3 flex gap-2">
+                              <Button
+                                size="sm"
+                                className="bg-green-600 hover:bg-green-700 text-xs"
+                                onClick={async () => {
+                                  const response = await fetch('/api/admin/access-requests', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ action: 'approve', userId: request.id }),
+                                  });
+                                  if (!response.ok) {
+                                    toast.error('Unable to approve request');
+                                    return;
+                                  }
+                                  const data = await response.json();
+                                  const credentials = data.credentials;
+                                  toast.success(
+                                    `Access approved. Email sent to ${credentials.email} with username ${credentials.username} and password ${credentials.password}. User can change credentials after login.`
+                                  );
+                                  fetchAccessRequests();
+                                }}
+                              >
+                                Approve
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                className="text-xs"
+                                onClick={async () => {
+                                  const response = await fetch('/api/admin/access-requests', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ action: 'deny', userId: request.id }),
+                                  });
+                                  if (!response.ok) {
+                                    toast.error('Unable to deny request');
+                                    return;
+                                  }
+                                  toast.success('Request denied');
+                                  fetchAccessRequests();
+                                }}
+                              >
+                                Deny
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+
+              {/* Notification Bell */}
+              {!isGuest && <NotificationBell />}
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="flex items-center gap-3">
+                    {isGuest ? (
+                      <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center">
+                        <User size={20} className="text-white" />
+                      </div>
+                    ) : isAdmin ? (
+                      <img
+                        src={user.profilePhoto || '/default-admin.svg'}
+                        alt="Admin Profile"
+                        className="w-10 h-10 rounded-full object-cover border-2 border-blue-400"
+                        style={{ objectPosition: 'center 0%' }}
+                      />
+                    ) : (
+                      <img
+                        src={user.profilePhoto || 'https://via.placeholder.com/40'}
+                        alt="Profile"
+                        className="w-10 h-10 rounded-full object-cover border-2 border-blue-400"
+                        style={{ objectPosition: 'center 0%' }}
+                      />
+                    )}
+                    <div className="hidden sm:block text-left">
+                      <p className="text-sm font-semibold text-slate-900">{user.fullName || user.username}</p>
+                      <p className="text-xs text-slate-500">{isFounder ? 'Founder' : isAdmin ? 'Administrator' : user.designation}</p>
+                    </div>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-64">
+                  <DropdownMenuLabel>User Profile</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {!isGuest && (
+                    <div className="px-4 py-3 text-center mb-2">
+                      <img src={logoImg} alt="Logo" className="h-8 w-auto mx-auto mb-2" />
+                      <p className="text-xs text-slate-500">SURYA'S MiB ENTERPRISE</p>
+                    </div>
+                  )}
+                  <div className="px-4 py-3 space-y-2">
+                    <div>
+                      <p className="text-xs text-slate-500">Full Name</p>
+                      <p className="text-sm font-semibold">{user.fullName || user.username}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500">ID Number</p>
+                      <p className="text-sm font-semibold font-mono">{user.id}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500">Designation</p>
+                      <p className="text-sm font-semibold">{user.designation}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500">Email</p>
+                      <p className="text-sm font-semibold text-blue-600">{user.email}</p>
+                    </div>
+                  </div>
+                  <DropdownMenuSeparator />
+                  {!isGuest && (
+                    <>
+                      <DropdownMenuItem onClick={() => setShowProfileEditor(true)}>
+                        <User size={16} className="mr-2" />
+                        Edit Profile
+                      </DropdownMenuItem>
+                      {isAdmin && (
+                        <DropdownMenuItem>
+                          <Share2 size={16} className="mr-2" />
+                          Management Console
+                        </DropdownMenuItem>
+                      )}
+                      {isAdmin && <DropdownMenuSeparator />}
+                    </>
+                  )}
+                  <DropdownMenuItem onClick={handleLogout} className="text-red-600 cursor-pointer">
+                    <LogOut size={16} className="mr-2" />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
         </div>
 
@@ -342,6 +470,12 @@ export default function MainLayout({ children }: MainLayoutProps) {
           qrCode={selectedQR}
         />
       )}
+
+      <ProfileSetupModal
+        isOpen={showProfileEditor}
+        onClose={() => setShowProfileEditor(false)}
+        mode="edit"
+      />
     </div>
   );
 }

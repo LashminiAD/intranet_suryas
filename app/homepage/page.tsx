@@ -24,7 +24,7 @@ export default function HomePage() {
 
     if (user) {
       // Guest flow: show guest purpose modal if not completed
-      if (user.role === 'guest' && !(user as any).guestFormCompleted) {
+      if (user.role === 'guest' && !user.guestFormCompleted) {
         setShowGuestModal(true);
         return;
       }
@@ -104,7 +104,7 @@ export default function HomePage() {
               <p className="text-blue-100 text-lg">
                 {isAdmin
                   ? 'You have full administrative access to the system.'
-                  : 'Welcome to SURYA\'S MiB Virtual Intranet Portal.'}
+                  : 'Welcome to Proposal Virtual Intranet Portal.'}
               </p>
             </div>
           </div>
@@ -192,10 +192,9 @@ export default function HomePage() {
 
         {/* About Section */}
         <Card className="bg-blue-50 border-l-4 border-blue-600 p-6">
-          <h3 className="text-lg font-bold text-slate-900 mb-3">ℹ️ About SURYA'S MiB</h3>
-          <p className="text-slate-700 mb-4">
-            SURYA'S MiB is a leading Micro, Small and Medium Enterprise specializing in innovative solutions.
-            This intranet portal provides a centralized platform for all your professional needs.
+          <h3 className="text-lg font-bold text-slate-900 mb-3">ℹ️ About Proposal</h3>
+          <p className="text-slate-600 mb-4">
+            Proposal is a modern virtual intranet experience for streamlined collaboration.
           </p>
           <Button
             variant="outline"

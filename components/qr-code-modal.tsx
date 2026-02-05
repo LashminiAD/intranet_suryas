@@ -20,7 +20,13 @@ export function QRCodeModal({ isOpen, onClose, qrCode }: QRModalProps) {
   const [isZoomed, setIsZoomed] = useState(false);
 
   const handleDownload = () => {
-    // In a real app, this would download the QR code
+    // Create a temporary anchor element to trigger download
+    const link = document.createElement('a');
+    link.href = qrCode.image;
+    link.download = `${qrCode.name.replace(/\s+/g, '_')}_QR_Code.jpeg`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
     toast.success(`${qrCode.name} QR code downloaded!`);
   };
 
@@ -36,11 +42,16 @@ export function QRCodeModal({ isOpen, onClose, qrCode }: QRModalProps) {
       <DialogContent className={`${isZoomed ? 'w-full max-w-2xl' : 'sm:max-w-md'}`}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            💳 {qrCode.name} - SURYA'S MIB
+            💳 {qrCode.name} - Proposal
           </DialogTitle>
         </DialogHeader>
 
         <div className="flex flex-col items-center gap-4">
+          {/* Scan & Pay Text */}
+          <p className="text-center text-lg font-semibold text-slate-700">
+            Scan & Pay with any UPI App
+          </p>
+
           {/* QR Code Image */}
           <div
             className={`bg-gray-100 p-4 rounded-lg border-2 border-gray-300 cursor-zoom-in ${
@@ -54,6 +65,11 @@ export function QRCodeModal({ isOpen, onClose, qrCode }: QRModalProps) {
               className="w-full h-full object-cover rounded"
             />
           </div>
+
+          {/* Company Name */}
+          <p className="text-center text-lg font-bold text-slate-800">
+            SURYA'S MIB ENTERPRISES
+          </p>
 
           {/* UPI ID (if available) */}
           {qrCode.upi && (
@@ -74,27 +90,11 @@ export function QRCodeModal({ isOpen, onClose, qrCode }: QRModalProps) {
             </div>
           )}
 
-          {/* Instructions */}
-          <div className="w-full bg-amber-50 p-4 rounded-lg border border-amber-200">
-            <p className="text-xs text-amber-900">
-              <strong>📱 How to use:</strong> Scan this QR code with any UPI app or share the UPI ID above.
-              {isZoomed && ' Click on the QR code to zoom out.'}
-            </p>
-          </div>
-
           {/* Actions */}
           <div className="flex gap-3 w-full mt-4">
             <Button
-              onClick={handleDownload}
-              variant="outline"
-              className="flex-1 flex items-center justify-center gap-2"
-            >
-              <Download size={16} />
-              Download
-            </Button>
-            <Button
               onClick={onClose}
-              className="flex-1 bg-blue-600 hover:bg-blue-700 flex items-center justify-center gap-2"
+              className="w-full bg-blue-600 hover:bg-blue-700 flex items-center justify-center gap-2"
             >
               <X size={16} />
               Close

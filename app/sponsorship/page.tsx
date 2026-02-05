@@ -27,7 +27,7 @@ export default function SponsorshipPage() {
       <div className="max-w-6xl">
         <h1 className="text-3xl font-bold text-slate-900 mb-2">Sponsorship Programs</h1>
         <p className="text-slate-600 mb-8">
-          SURYA'S MiB supports institutions, events, and initiatives through various sponsorship opportunities
+          Proposal supports institutions, events, and initiatives through various sponsorship opportunities
         </p>
 
         {/* Sponsorship Types */}

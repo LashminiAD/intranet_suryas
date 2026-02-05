@@ -52,7 +52,7 @@ export default function ProjectCreationPage() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!formData.projectTitle || !formData.abstract || !formData.clientName) {
@@ -60,7 +60,41 @@ export default function ProjectCreationPage() {
       return;
     }
 
-    toast.success('Project created successfully! Submitted to Founder.');
+    const response = await fetch('/api/requests', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'proposal',
+        title: 'Project Proposal',
+        createdBy: user?.fullName || user?.username || 'User',
+        createdById: user?.id,
+        createdByRole: user?.role,
+        createdByDesignation: user?.designation,
+        target: 'founder',
+        payload: {
+          projectTitle: formData.projectTitle,
+          projectStatus: formData.projectStatus,
+          createdBy: formData.createdBy,
+          abstractFileName: formData.abstractFileName,
+          clientName: formData.clientName,
+          clientOrganization: formData.clientOrganization,
+          clientDesignation: formData.clientDesignation,
+          clientAddress: formData.clientAddress,
+          clientPhone: formData.clientPhone,
+          clientEmail: formData.clientEmail,
+          projectAmount: formData.projectAmount,
+          forwardedBy: formData.forwardedBy,
+          submittedAt: new Date().toISOString(),
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      toast.error('Failed to submit proposal');
+      return;
+    }
+
+    toast.success('Proposal created successfully! Submitted to Founder.');
     setFormData({
       projectTitle: '',
       projectStatus: 'planned',
@@ -87,17 +121,17 @@ export default function ProjectCreationPage() {
       <div className="max-w-6xl grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Main Form - 3 columns */}
         <div className="lg:col-span-3">
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">Project Creation</h1>
-          <p className="text-slate-600 mb-6">Create and submit new project proposals</p>
+          <h1 className="text-3xl font-bold text-slate-900 mb-2">Proposal Creation</h1>
+          <p className="text-slate-600 mb-6">Create and submit new proposals</p>
 
           <Card className="bg-white p-8">
             <form onSubmit={handleSubmit} className="space-y-6">
             {/* Project Details */}
             <div className="bg-slate-50 p-4 rounded-lg">
-              <h3 className="font-semibold text-slate-900 mb-4">Project Details</h3>
+              <h3 className="font-semibold text-slate-900 mb-4">Proposal Details</h3>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Project Title *</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Proposal Title *</label>
                   <Input
                     type="text"
                     name="projectTitle"
@@ -109,7 +143,7 @@ export default function ProjectCreationPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Project Status</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Proposal Status</label>
                     <select
                       name="projectStatus"
                       value={formData.projectStatus}
@@ -129,7 +163,7 @@ export default function ProjectCreationPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Project Abstract (PDF) *</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Proposal Abstract (PDF) *</label>
                   <div className="flex items-center gap-2">
                     <label className="flex-1 flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-blue-300 rounded-lg cursor-pointer hover:bg-blue-50 transition">
                       <Upload size={18} className="text-blue-600" />
@@ -229,7 +263,7 @@ export default function ProjectCreationPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Project Amount (₹)</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Proposal Amount (₹)</label>
                     <Input
                       type="number"
                       name="projectAmount"
@@ -254,7 +288,7 @@ export default function ProjectCreationPage() {
 
               <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800">
                 <p className="font-semibold mb-1">Submitted to: Founder</p>
-                <p>Your project proposal will be reviewed by the founder for approval.</p>
+                <p>Your proposal will be reviewed by the founder for approval.</p>
               </div>
             </div>
 

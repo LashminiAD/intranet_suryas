@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
 import MainLayout from '@/components/main-layout';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { CheckCircle, XCircle, Clock } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, Trash2, FileDown, PenTool } from 'lucide-react';
 import { toast } from 'sonner';
 import { EventsCarousel } from '@/components/events-carousel';
 
@@ -14,35 +14,12 @@ export default function AdminDashboard() {
   const { isAuthenticated, user } = useAuth();
   const router = useRouter();
 
-  const [leaveRequests, setLeaveRequests] = useState([
-    {
-      id: 1,
-      name: 'John Intern',
-      type: 'Annual Leave',
-      dates: 'Jan 15-19, 2026',
-      reason: 'Family vacation',
-      status: 'pending',
-    },
-    {
-      id: 2,
-      name: 'Sarah Freelancer',
-      type: 'Sick Leave',
-      dates: 'Jan 20, 2026',
-      reason: 'Medical appointment',
-      status: 'pending',
-    },
-  ]);
+  const [requests, setRequests] = useState<any[]>([]);
+  const [founderRequests, setFounderRequests] = useState<any[]>([]);
+  const lastFounderReportCount = useRef(0);
 
-  const [taClaims, setTAClaims] = useState([
-    { id: 1, name: 'Mike Admin', amount: 5000, description: 'Client meeting expenses', status: 'pending' },
-    { id: 2, name: 'Lisa User', amount: 3500, description: 'Travel reimbursement', status: 'pending' },
-  ]);
-
-  const [loginHistory, setLoginHistory] = useState([
-    { id: 1, user: 'john.intern', userType: 'Intern', date: '2026-01-21', time: '09:30 AM', status: 'active' },
-    { id: 2, user: 'guest.user', userType: 'Guest', date: '2026-01-21', time: '10:15 AM', status: 'active' },
-    { id: 3, user: 'sarah.freelancer', userType: 'Freelancer', date: '2026-01-21', time: '08:45 AM', status: 'offline' },
-  ]);
+  const [guestLogins, setGuestLogins] = useState<any[]>([]);
+  const [guestInquiries, setGuestInquiries] = useState<any[]>([]);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -50,24 +27,127 @@ export default function AdminDashboard() {
     }
   }, [isAuthenticated, router]);
 
-  const handleLeaveApprove = (id: number) => {
-    setLeaveRequests((prev) => prev.map((req) => (req.id === id ? { ...req, status: 'approved' } : req)));
-    toast.success('Leave request approved!');
+  const fetchRequests = async () => {
+    try {
+      const response = await fetch('/api/requests?target=all');
+      if (response.ok) {
+        const data = await response.json();
+        setRequests(data.requests || []);
+      }
+
+      if (user?.role === 'founder') {
+        const founderResponse = await fetch('/api/requests?target=founder');
+        if (founderResponse.ok) {
+          const founderData = await founderResponse.json();
+          setFounderRequests(founderData.requests || []);
+          const internReports = (founderData.requests || []).filter(
+            (req: any) => req.type === 'report' && (req.createdByDesignation || '').toLowerCase().includes('intern')
+          );
+          if (internReports.length > lastFounderReportCount.current) {
+            toast.success('New intern report submitted');
+            lastFounderReportCount.current = internReports.length;
+          }
+        }
+      }
+    } catch (error) {
+      console.error(error);
+    }
   };
 
-  const handleLeaveReject = (id: number) => {
-    setLeaveRequests((prev) => prev.map((req) => (req.id === id ? { ...req, status: 'rejected' } : req)));
-    toast.error('Leave request rejected!');
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    fetchRequests();
+    const interval = setInterval(fetchRequests, 15000);
+    return () => clearInterval(interval);
+  }, [isAuthenticated, user]);
+
+  // Load guest logins from localStorage
+  useEffect(() => {
+    const stored = localStorage.getItem('guestLogins');
+    if (stored) {
+      try {
+        setGuestLogins(JSON.parse(stored));
+      } catch (e) {
+        console.error('Failed to parse guest logins:', e);
+      }
+    }
+  }, []);
+
+  const handleRequestAction = async (requestId: string, action: 'approve' | 'reject') => {
+    const response = await fetch('/api/requests/action', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ requestId, action }),
+    });
+
+    if (!response.ok) {
+      toast.error('Unable to update request');
+      return;
+    }
+
+    await fetchRequests();
   };
 
-  const handleTAApprove = (id: number) => {
-    setTAClaims((prev) => prev.map((claim) => (claim.id === id ? { ...claim, status: 'approved' } : claim)));
-    toast.success('TA Claim approved!');
+  const handleFounderSign = async (requestId: string) => {
+    const response = await fetch('/api/requests/action', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ requestId, action: 'sign' }),
+    });
+
+    if (!response.ok) {
+      toast.error('Unable to sign request');
+      return;
+    }
+
+    const data = await response.json();
+    toast.success(`Signed and forwarded to ${data.forwardedTo}`);
+    await fetchRequests();
   };
 
-  const handleTAReject = (id: number) => {
-    setTAClaims((prev) => prev.map((claim) => (claim.id === id ? { ...claim, status: 'rejected' } : claim)));
-    toast.error('TA Claim rejected!');
+  const downloadRequestPdf = (request: any) => {
+    const payload = request.payload || {};
+    const html = `
+      <html>
+        <head>
+          <title>${request.title}</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 32px; color: #0f172a; }
+            h1 { font-size: 20px; margin-bottom: 8px; }
+            h2 { font-size: 14px; margin-top: 20px; }
+            .meta { font-size: 12px; color: #475569; margin-bottom: 16px; }
+            .section { margin-top: 16px; }
+            .line { margin: 6px 0; }
+            .footer { margin-top: 32px; font-size: 12px; color: #64748b; }
+          </style>
+        </head>
+        <body>
+          <h1>${request.title}</h1>
+          <div class="meta">Submitted by ${request.createdBy} • ${new Date(request.createdAt).toLocaleString('en-IN')}</div>
+          <div class="section">
+            <h2>Requester Details</h2>
+            <div class="line">Name: ${request.createdBy}</div>
+            <div class="line">ID: ${request.createdById || '-'}</div>
+            <div class="line">Designation: ${request.createdByDesignation || '-'}</div>
+            <div class="line">Role: ${request.createdByRole || '-'}</div>
+          </div>
+          <div class="section">
+            <h2>Request Information</h2>
+            ${Object.entries(payload)
+              .map(([key, value]) => `<div class="line">${key}: ${value ?? '-'}</div>`)
+              .join('')}
+          </div>
+          <div class="footer">Official Letter - Proposal Intranet System</div>
+        </body>
+      </html>
+    `;
+
+    const pdfWindow = window.open('', '_blank');
+    if (!pdfWindow) return;
+    pdfWindow.document.write(html);
+    pdfWindow.document.close();
+    pdfWindow.focus();
+    setTimeout(() => pdfWindow.print(), 300);
   };
 
   if (!isAuthenticated) {
@@ -113,15 +193,15 @@ export default function AdminDashboard() {
               <p className="text-3xl font-bold text-slate-900">12</p>
               <p className="text-xs text-blue-600 mt-2">Online now</p>
             </Card>
-            <Card className="bg-white p-6 border-l-4 border-purple-500 hover:shadow-lg transition">
-              <p className="text-slate-600 text-sm">New Registrations</p>
-              <p className="text-3xl font-bold text-slate-900">3</p>
-              <p className="text-xs text-purple-600 mt-2">This month</p>
+            <Card className="bg-white p-6 border-l-4 border-red-500 hover:shadow-lg transition">
+              <p className="text-slate-600 text-sm">Guest Inquiries</p>
+              <p className="text-3xl font-bold text-slate-900">{guestInquiries.filter(i => i.status === 'new').length}</p>
+              <p className="text-xs text-red-600 mt-2">Unread messages</p>
             </Card>
             <Card className="bg-white p-6 border-l-4 border-green-500 hover:shadow-lg transition">
-              <p className="text-slate-600 text-sm">Ongoing Projects</p>
-              <p className="text-3xl font-bold text-slate-900">5</p>
-              <p className="text-xs text-green-600 mt-2">In progress</p>
+              <p className="text-slate-600 text-sm">Guest Visitors</p>
+              <p className="text-3xl font-bold text-slate-900">{guestLogins.length}</p>
+              <p className="text-xs text-green-600 mt-2">Total visits</p>
             </Card>
           </div>
         </div>
@@ -142,12 +222,14 @@ export default function AdminDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {leaveRequests.map((request) => (
+                {requests.filter((req) => req.type === 'leave').map((request) => (
                   <tr key={request.id} className="border-b border-slate-100 hover:bg-slate-50">
-                    <td className="px-4 py-3 text-slate-900">{request.name}</td>
-                    <td className="px-4 py-3 text-slate-900">{request.type}</td>
-                    <td className="px-4 py-3 text-slate-900">{request.dates}</td>
-                    <td className="px-4 py-3 text-slate-900 truncate">{request.reason}</td>
+                    <td className="px-4 py-3 text-slate-900">{request.createdBy}</td>
+                    <td className="px-4 py-3 text-slate-900">{request.payload.leaveType}</td>
+                    <td className="px-4 py-3 text-slate-900">
+                      {request.payload.fromDate} - {request.payload.toDate}
+                    </td>
+                    <td className="px-4 py-3 text-slate-900 truncate">{request.payload.reason}</td>
                     <td className="px-4 py-3">
                       <span
                         className={`px-2 py-1 text-xs rounded font-medium ${
@@ -161,13 +243,13 @@ export default function AdminDashboard() {
                         {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
                       </span>
                     </td>
-                    <td className="px-4 py-3 flex gap-2">
+                    <td className="px-4 py-3 flex flex-wrap gap-2">
                       {request.status === 'pending' && (
                         <>
                           <Button
                             size="sm"
                             className="bg-green-600 hover:bg-green-700 text-xs"
-                            onClick={() => handleLeaveApprove(request.id)}
+                            onClick={() => handleRequestAction(request.id, 'approve')}
                           >
                             Approve
                           </Button>
@@ -175,12 +257,20 @@ export default function AdminDashboard() {
                             size="sm"
                             variant="destructive"
                             className="text-xs"
-                            onClick={() => handleLeaveReject(request.id)}
+                            onClick={() => handleRequestAction(request.id, 'reject')}
                           >
                             Reject
                           </Button>
                         </>
                       )}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-xs"
+                        onClick={() => downloadRequestPdf(request)}
+                      >
+                        <FileDown size={14} className="mr-1" /> PDF
+                      </Button>
                       {request.status === 'approved' && <CheckCircle size={18} className="text-green-600" />}
                       {request.status === 'rejected' && <XCircle size={18} className="text-red-600" />}
                     </td>
@@ -189,6 +279,43 @@ export default function AdminDashboard() {
               </tbody>
             </table>
           </div>
+        </Card>
+
+        {/* Guest Activity Log */}
+        <Card className="bg-white p-6">
+          <h2 className="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+            👥 Guest Activity Log
+          </h2>
+          {guestLogins.length === 0 ? (
+            <p className="text-sm text-slate-600">No guest visits recorded yet.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-slate-50 border-b border-slate-200">
+                  <tr>
+                    <th className="text-left px-4 py-3 font-semibold text-slate-900">Guest Name</th>
+                    <th className="text-left px-4 py-3 font-semibold text-slate-900">Email</th>
+                    <th className="text-left px-4 py-3 font-semibold text-slate-900">Company</th>
+                    <th className="text-left px-4 py-3 font-semibold text-slate-900">Visit Date</th>
+                    <th className="text-left px-4 py-3 font-semibold text-slate-900">Visit Time</th>
+                    <th className="text-left px-4 py-3 font-semibold text-slate-900">Purpose</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {guestLogins.map((guest) => (
+                    <tr key={guest.id} className="border-b border-slate-100 hover:bg-slate-50">
+                      <td className="px-4 py-3 text-slate-900 font-medium">{guest.name}</td>
+                      <td className="px-4 py-3 text-slate-900">{guest.email || 'N/A'}</td>
+                      <td className="px-4 py-3 text-slate-900">{guest.companyName || 'N/A'}</td>
+                      <td className="px-4 py-3 text-slate-900">{guest.visitDate}</td>
+                      <td className="px-4 py-3 text-slate-900">{guest.visitTime}</td>
+                      <td className="px-4 py-3 text-slate-700 max-w-xs truncate">{guest.purpose}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </Card>
 
         {/* TA Claims */}
@@ -206,11 +333,11 @@ export default function AdminDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {taClaims.map((claim) => (
+                {requests.filter((req) => req.type === 'ta').map((claim) => (
                   <tr key={claim.id} className="border-b border-slate-100 hover:bg-slate-50">
-                    <td className="px-4 py-3 text-slate-900">{claim.name}</td>
-                    <td className="px-4 py-3 text-slate-900 font-semibold">{claim.amount}</td>
-                    <td className="px-4 py-3 text-slate-900 truncate">{claim.description}</td>
+                    <td className="px-4 py-3 text-slate-900">{claim.createdBy}</td>
+                    <td className="px-4 py-3 text-slate-900 font-semibold">{claim.payload.amount}</td>
+                    <td className="px-4 py-3 text-slate-900 truncate">{claim.payload.description}</td>
                     <td className="px-4 py-3">
                       <span
                         className={`px-2 py-1 text-xs rounded font-medium ${
@@ -224,13 +351,13 @@ export default function AdminDashboard() {
                         {claim.status.charAt(0).toUpperCase() + claim.status.slice(1)}
                       </span>
                     </td>
-                    <td className="px-4 py-3 flex gap-2">
+                    <td className="px-4 py-3 flex flex-wrap gap-2">
                       {claim.status === 'pending' && (
                         <>
                           <Button
                             size="sm"
                             className="bg-green-600 hover:bg-green-700 text-xs"
-                            onClick={() => handleTAApprove(claim.id)}
+                            onClick={() => handleRequestAction(claim.id, 'approve')}
                           >
                             Approve
                           </Button>
@@ -238,12 +365,20 @@ export default function AdminDashboard() {
                             size="sm"
                             variant="destructive"
                             className="text-xs"
-                            onClick={() => handleTAReject(claim.id)}
+                            onClick={() => handleRequestAction(claim.id, 'reject')}
                           >
                             Reject
                           </Button>
                         </>
                       )}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-xs"
+                        onClick={() => downloadRequestPdf(claim)}
+                      >
+                        <FileDown size={14} className="mr-1" /> PDF
+                      </Button>
                       {claim.status === 'approved' && <CheckCircle size={18} className="text-green-600" />}
                       {claim.status === 'rejected' && <XCircle size={18} className="text-red-600" />}
                     </td>
@@ -254,43 +389,175 @@ export default function AdminDashboard() {
           </div>
         </Card>
 
-        {/* Login History */}
+        {/* Proposal Requests */}
         <Card className="bg-white p-6">
-          <h2 className="text-xl font-bold text-slate-900 mb-4">Login History (Sortable by Date & User Type)</h2>
+          <h2 className="text-xl font-bold text-slate-900 mb-4">Proposal Requests</h2>
+          <div className="space-y-3">
+            {requests.filter((req) => req.type === 'proposal').map((req) => (
+              <div key={req.id} className="border rounded-lg p-4">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">{req.payload.projectTitle}</p>
+                    <p className="text-xs text-slate-500">Submitted by {req.createdBy}</p>
+                  </div>
+                  <span className="text-xs text-slate-500">{new Date(req.createdAt).toLocaleString('en-IN')}</span>
+                </div>
+                <div className="flex flex-wrap gap-2 mt-3">
+                  <Button size="sm" variant="outline" onClick={() => downloadRequestPdf(req)}>
+                    <FileDown size={14} className="mr-1" /> PDF
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        {/* Recruitment Requests */}
+        <Card className="bg-white p-6">
+          <h2 className="text-xl font-bold text-slate-900 mb-4">Recruitment Requests</h2>
+          <div className="space-y-3">
+            {requests.filter((req) => req.type === 'recruitment').map((req) => (
+              <div key={req.id} className="border rounded-lg p-4">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">{req.payload.role}</p>
+                    <p className="text-xs text-slate-500">{req.createdBy} • {req.payload.email || ''}</p>
+                  </div>
+                  <span className="text-xs text-slate-500">{new Date(req.createdAt).toLocaleString('en-IN')}</span>
+                </div>
+                <p className="text-sm text-slate-700 mt-2">{req.payload.message}</p>
+                <div className="flex flex-wrap gap-2 mt-3">
+                  <Button size="sm" variant="outline" onClick={() => downloadRequestPdf(req)}>
+                    <FileDown size={14} className="mr-1" /> PDF
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        {/* Report Requests */}
+        <Card className="bg-white p-6">
+          <h2 className="text-xl font-bold text-slate-900 mb-4">Reports</h2>
+          <div className="space-y-3">
+            {requests.filter((req) => req.type === 'report').map((req) => (
+              <div key={req.id} className="border rounded-lg p-4">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">{req.payload.reportType} report</p>
+                    <p className="text-xs text-slate-500">{req.createdBy}</p>
+                  </div>
+                  <span className="text-xs text-slate-500">{new Date(req.createdAt).toLocaleString('en-IN')}</span>
+                </div>
+                <p className="text-sm text-slate-700 mt-2">{req.payload.reportContent}</p>
+                <div className="flex flex-wrap gap-2 mt-3">
+                  <Button size="sm" variant="outline" onClick={() => downloadRequestPdf(req)}>
+                    <FileDown size={14} className="mr-1" /> PDF
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        {user?.role === 'founder' && (
+          <Card className="bg-white p-6">
+            <h2 className="text-xl font-bold text-slate-900 mb-4">Founder Signature Queue</h2>
+            <div className="space-y-3">
+              {founderRequests.length === 0 && (
+                <p className="text-sm text-slate-600">No pending requests for signature.</p>
+              )}
+              {founderRequests.map((req) => (
+                <div key={req.id} className="border rounded-lg p-4">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900">{req.title}</p>
+                      <p className="text-xs text-slate-500">{req.createdBy} • {req.createdByDesignation || ''}</p>
+                    </div>
+                    <span className="text-xs text-slate-500">{new Date(req.createdAt).toLocaleString('en-IN')}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    <Button size="sm" variant="outline" onClick={() => downloadRequestPdf(req)}>
+                      <FileDown size={14} className="mr-1" /> PDF
+                    </Button>
+                    {req.type !== 'report' && (
+                      <Button size="sm" className="bg-blue-600 hover:bg-blue-700" onClick={() => handleFounderSign(req.id)}>
+                        <PenTool size={14} className="mr-1" /> Sign & Forward
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
+
+        {/* Guest Inquiries */}
+        <Card className="bg-white p-6">
+          <h2 className="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+            💬 Guest Inquiries & Messages
+          </h2>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-slate-50 border-b border-slate-200">
                 <tr>
-                  <th className="text-left px-4 py-3 font-semibold text-slate-900 cursor-pointer hover:bg-slate-100">
-                    Username
-                  </th>
-                  <th className="text-left px-4 py-3 font-semibold text-slate-900 cursor-pointer hover:bg-slate-100">
-                    User Type
-                  </th>
-                  <th className="text-left px-4 py-3 font-semibold text-slate-900 cursor-pointer hover:bg-slate-100">
-                    Date
-                  </th>
-                  <th className="text-left px-4 py-3 font-semibold text-slate-900">Time</th>
+                  <th className="text-left px-4 py-3 font-semibold text-slate-900">Guest Name</th>
+                  <th className="text-left px-4 py-3 font-semibold text-slate-900">Subject</th>
+                  <th className="text-left px-4 py-3 font-semibold text-slate-900">Message</th>
+                  <th className="text-left px-4 py-3 font-semibold text-slate-900">Date & Time</th>
                   <th className="text-left px-4 py-3 font-semibold text-slate-900">Status</th>
+                  <th className="text-left px-4 py-3 font-semibold text-slate-900">Action</th>
                 </tr>
               </thead>
               <tbody>
-                {loginHistory.map((log) => (
-                  <tr key={log.id} className="border-b border-slate-100 hover:bg-slate-50">
-                    <td className="px-4 py-3 text-slate-900 font-medium">{log.user}</td>
-                    <td className="px-4 py-3 text-slate-900">{log.userType}</td>
-                    <td className="px-4 py-3 text-slate-900">{log.date}</td>
-                    <td className="px-4 py-3 text-slate-900">{log.time}</td>
+                {guestInquiries.map((inquiry) => (
+                  <tr key={inquiry.id} className="border-b border-slate-100 hover:bg-slate-50">
+                    <td className="px-4 py-3 text-slate-900 font-medium">{inquiry.guestName}</td>
+                    <td className="px-4 py-3 text-slate-900 font-semibold">{inquiry.subject}</td>
+                    <td className="px-4 py-3 text-slate-700 max-w-xs truncate">{inquiry.message}</td>
+                    <td className="px-4 py-3 text-slate-900 text-xs">
+                      {inquiry.date} <br /> {inquiry.time}
+                    </td>
                     <td className="px-4 py-3">
                       <span
                         className={`px-2 py-1 text-xs rounded font-medium ${
-                          log.status === 'active'
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-slate-100 text-slate-800'
+                          inquiry.status === 'new'
+                            ? 'bg-red-100 text-red-800'
+                            : inquiry.status === 'read'
+                              ? 'bg-blue-100 text-blue-800'
+                              : 'bg-green-100 text-green-800'
                         }`}
                       >
-                        {log.status.charAt(0).toUpperCase() + log.status.slice(1)}
+                        {inquiry.status.charAt(0).toUpperCase() + inquiry.status.slice(1)}
                       </span>
+                    </td>
+                    <td className="px-4 py-3 flex gap-2">
+                      {inquiry.status === 'new' && (
+                        <Button
+                          size="sm"
+                          className="bg-blue-600 hover:bg-blue-700 text-xs"
+                          onClick={() => handleInquiryStatusChange(inquiry.id, 'read')}
+                        >
+                          Mark Read
+                        </Button>
+                      )}
+                      {inquiry.status !== 'resolved' && (
+                        <Button
+                          size="sm"
+                          className="bg-green-600 hover:bg-green-700 text-xs"
+                          onClick={() => handleInquiryStatusChange(inquiry.id, 'resolved')}
+                        >
+                          Resolve
+                        </Button>
+                      )}
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        className="text-xs"
+                        onClick={() => handleDeleteInquiry(inquiry.id)}
+                      >
+                        Delete
+                      </Button>
                     </td>
                   </tr>
                 ))}

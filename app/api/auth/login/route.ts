@@ -24,6 +24,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (user.status === 'pending') {
+      return NextResponse.json(
+        { error: 'Access pending admin approval. Please wait for confirmation email.' },
+        { status: 403 }
+      );
+    }
+
     // Verify password
     const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
 
