@@ -4,11 +4,12 @@ import React, { useEffect, useState } from 'react';
 import MainLayout from '@/components/main-layout';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, XCircle, Clock, Search, Filter, FileDown, Eye } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, Search, Filter, FileDown, Eye, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
 import FileViewerModal from '@/components/file-viewer-modal';
+import { exportToExcel, formatExportDate, getStatusLabel, getReasonForExport } from '@/lib/excel-export';
 
 export default function LeaveManagement() {
   const { isAuthenticated } = useAuth();
@@ -67,6 +68,38 @@ export default function LeaveManagement() {
     }
 
     toast.error('❌ Leave request rejected!');
+  };
+
+  const handleExportToExcel = () => {
+    try {
+      if (filteredRequests.length === 0) {
+        toast.error('No data to export');
+        return;
+      }
+
+      const exportData = filteredRequests.map((request) => ({
+        Username: request.createdBy,
+        RequestType: 'Leave',
+        Reason: request.payload?.reason || '',
+        Status: getStatusLabel(request.status),
+        AppliedDate: formatExportDate(request.createdAt),
+      }));
+
+      const columns = [
+        { key: 'Username', header: 'Username' },
+        { key: 'RequestType', header: 'Request Type' },
+        { key: 'Reason', header: 'Reason' },
+        { key: 'Status', header: 'Status' },
+        { key: 'AppliedDate', header: 'Applied Date' },
+      ];
+
+      const dateStamp = new Date().toISOString().split('T')[0];
+      exportToExcel(exportData, columns, `Leave_Requests_${dateStamp}`);
+      toast.success('✓ Leave requests exported to Excel');
+    } catch (error) {
+      toast.error('Failed to export data');
+      console.error(error);
+    }
   };
 
   const downloadUploadedFile = (request: any) => {
@@ -183,6 +216,14 @@ export default function LeaveManagement() {
               <option value="rejected">Rejected</option>
             </select>
           </div>
+          <Button
+            onClick={handleExportToExcel}
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+            disabled={leaveRequests.length === 0}
+          >
+            <Download size={18} className="mr-2" />
+            Download Excel
+          </Button>
         </div>
 
         {/* Stats Cards */}

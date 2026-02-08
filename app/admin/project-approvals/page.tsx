@@ -4,11 +4,12 @@ import React, { useEffect, useState } from 'react';
 import MainLayout from '@/components/main-layout';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, XCircle, Clock, Search, Filter, FileDown, Eye } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, Search, Filter, FileDown, Eye, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
 import FileViewerModal from '@/components/file-viewer-modal';
+import { exportToExcel, formatExportDate, getStatusLabel } from '@/lib/excel-export';
 
 export default function ProjectApprovals() {
   const { isAuthenticated } = useAuth();
@@ -103,6 +104,38 @@ export default function ProjectApprovals() {
     }
   };
 
+  const handleExportToExcel = () => {
+    try {
+      if (filteredProjects.length === 0) {
+        toast.error('No data to export');
+        return;
+      }
+
+      const exportData = filteredProjects.map((project) => ({
+        Username: project.createdBy,
+        RequestType: 'Proposal',
+        Reason: project.payload?.projectTitle || '',
+        Status: getStatusLabel(project.status),
+        AppliedDate: formatExportDate(project.createdAt),
+      }));
+
+      const columns = [
+        { key: 'Username', header: 'Username' },
+        { key: 'RequestType', header: 'Request Type' },
+        { key: 'Reason', header: 'Reason' },
+        { key: 'Status', header: 'Status' },
+        { key: 'AppliedDate', header: 'Applied Date' },
+      ];
+
+      const dateStamp = new Date().toISOString().split('T')[0];
+      exportToExcel(exportData, columns, `Project_Proposals_${dateStamp}`);
+      toast.success('✓ Project proposals exported to Excel');
+    } catch (error) {
+      toast.error('Failed to export data');
+      console.error(error);
+    }
+  };
+
   return (
     <MainLayout>
       <div className="max-w-7xl space-y-6">
@@ -135,6 +168,14 @@ export default function ProjectApprovals() {
               <option value="rejected">Rejected</option>
             </select>
           </div>
+          <Button
+            onClick={handleExportToExcel}
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+            disabled={projects.length === 0}
+          >
+            <Download size={18} className="mr-2" />
+            Download Excel
+          </Button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

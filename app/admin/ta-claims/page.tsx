@@ -4,11 +4,12 @@ import React, { useEffect, useState } from 'react';
 import MainLayout from '@/components/main-layout';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, XCircle, Clock, Search, Filter, DollarSign, FileDown, Eye } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, Search, Filter, DollarSign, FileDown, Eye, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
 import FileViewerModal from '@/components/file-viewer-modal';
+import { exportToExcel, formatExportDate, getStatusLabel } from '@/lib/excel-export';
 
 export default function TAClaims() {
   const { isAuthenticated } = useAuth();
@@ -134,6 +135,38 @@ export default function TAClaims() {
     return filteredClaims.reduce((sum, claim) => sum + Number(claim.payload?.amount || 0), 0);
   };
 
+  const handleExportToExcel = () => {
+    try {
+      if (filteredClaims.length === 0) {
+        toast.error('No data to export');
+        return;
+      }
+
+      const exportData = filteredClaims.map((claim) => ({
+        Username: claim.createdBy,
+        RequestType: 'Allowance Claim',
+        Reason: claim.payload?.description || '',
+        Status: getStatusLabel(claim.status),
+        AppliedDate: formatExportDate(claim.createdAt),
+      }));
+
+      const columns = [
+        { key: 'Username', header: 'Username' },
+        { key: 'RequestType', header: 'Request Type' },
+        { key: 'Reason', header: 'Reason' },
+        { key: 'Status', header: 'Status' },
+        { key: 'AppliedDate', header: 'Applied Date' },
+      ];
+
+      const dateStamp = new Date().toISOString().split('T')[0];
+      exportToExcel(exportData, columns, `TA_Claims_${dateStamp}`);
+      toast.success('✓ Allowance claims exported to Excel');
+    } catch (error) {
+      toast.error('Failed to export data');
+      console.error(error);
+    }
+  };
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'pending':
@@ -179,6 +212,14 @@ export default function TAClaims() {
               <option value="rejected">Rejected</option>
             </select>
           </div>
+          <Button
+            onClick={handleExportToExcel}
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+            disabled={taClaims.length === 0}
+          >
+            <Download size={18} className="mr-2" />
+            Download Excel
+          </Button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">

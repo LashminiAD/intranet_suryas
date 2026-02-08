@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import MainLayout from '@/components/main-layout';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { CheckCircle, XCircle, Clock, Trash2, FileDown, PenTool } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, Trash2, FileDown, PenTool, AlertTriangle, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { EventsCarousel } from '@/components/events-carousel';
 import FileViewerModal from '@/components/file-viewer-modal';
@@ -30,6 +30,7 @@ export default function AdminDashboard() {
     balance: 0,
     transactions: [],
   });
+  const [dataRetention, setDataRetention] = useState<any>(null);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -90,6 +91,23 @@ export default function AdminDashboard() {
     };
     fetchLedger();
     const interval = setInterval(fetchLedger, 15000);
+    return () => clearInterval(interval);
+  }, [user]);
+
+  useEffect(() => {
+    if (user?.role !== 'admin') return;
+    const fetchDataRetention = async () => {
+      try {
+        const response = await fetch('/api/admin/data-retention?action=check');
+        if (!response.ok) return;
+        const data = await response.json();
+        setDataRetention(data);
+      } catch (error) {
+        console.error('Data retention fetch error:', error);
+      }
+    };
+    fetchDataRetention();
+    const interval = setInterval(fetchDataRetention, 60000); // Check every minute
     return () => clearInterval(interval);
   }, [user]);
 
@@ -339,7 +357,70 @@ export default function AdminDashboard() {
           )}
         </div>
 
-        {/* EVENTS & WEBINARS - TOP PRIORITY */}
+        {/* Data Retention Warning Banner */}
+        {dataRetention && (dataRetention.status === 'warning' || dataRetention.status === 'critical') && (
+          <Card className={`p-5 border-l-4 ${
+            dataRetention.status === 'critical' 
+              ? 'bg-red-50 border-red-500' 
+              : 'bg-amber-50 border-amber-500'
+          }`}>
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0 mt-0.5">
+                {dataRetention.status === 'critical' ? (
+                  <AlertTriangle className="text-red-600" size={24} />
+                ) : (
+                  <AlertTriangle className="text-amber-600" size={24} />
+                )}
+              </div>
+              <div className="flex-1">
+                <h3 className={`font-bold text-lg ${
+                  dataRetention.status === 'critical' 
+                    ? 'text-red-900' 
+                    : 'text-amber-900'
+                }`}>
+                  {dataRetention.status === 'critical' 
+                    ? '🔴 FINAL NOTICE - Data Reset Imminent' 
+                    : '⚠️ Data Backup Reminder'}
+                </h3>
+                <p className={`mt-2 ${
+                  dataRetention.status === 'critical' 
+                    ? 'text-red-800' 
+                    : 'text-amber-800'
+                }`}>
+                  {dataRetention.message}
+                </p>
+                <div className={`mt-3 text-sm font-semibold ${
+                  dataRetention.status === 'critical' 
+                    ? 'text-red-700' 
+                    : 'text-amber-700'
+                }`}>
+                  Time Remaining: {dataRetention.daysRemaining} days
+                </div>
+                <div className="mt-4 flex gap-3">
+                  <Button
+                    onClick={exportApprovalRecords}
+                    className={dataRetention.status === 'critical' 
+                      ? 'bg-red-600 hover:bg-red-700 text-white' 
+                      : 'bg-amber-600 hover:bg-amber-700 text-white'}
+                  >
+                    <Download size={18} className="mr-2" />
+                    Download All Data as Excel
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className={dataRetention.status === 'critical'
+                      ? 'border-red-300 text-red-600'
+                      : 'border-amber-300 text-amber-600'}
+                  >
+                    Learn More
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {/* Events & Webinars - TOP PRIORITY */}
         <div className="bg-white rounded-lg shadow-md p-6 border-t-4 border-blue-500">
           <div className="mb-6">
             <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2 mb-2">
