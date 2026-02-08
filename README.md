@@ -82,23 +82,6 @@ If the page doesn't load:
 4. ✅ **Hard refresh** the page (Ctrl+F5 or Cmd+Shift+R)
 5. ✅ **Restart dev server** if still not working
 
-## 🔑 Test Credentials
-
-### Admin Login
-- **Role:** Admin
-- **Username:** JayendranM
-- **Password:** AdminJ@123
-
-### User Login
-- **Role:** User
-- **Username:** lash
-- **Password:** lash@123
-
-### Guest Login
-- **Role:** Guest
-- **Username:** guest@suryas.com
-- **Password:** Guest@123
-
 ## 📁 Project Structure
 
 ```
