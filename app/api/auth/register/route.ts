@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import { findUserByUsername, addUser, getAllUsers } from '@/lib/user-database';
+import { findUserByUsername, addUser, getAllUsers, StoredUser } from '@/lib/user-database';
 import { saveUsersToDB } from '@/lib/user-db';
 import { addNotificationDB } from '@/lib/notification-db';
 
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     const isPrivileged = false;
 
     // Create new user with PENDING_APPROVAL status for non-privileged users
-    const newUser = {
+    const newUser: Omit<StoredUser, 'passwordHash'> & { passwordHash: string } = {
       id: `user-${Date.now()}`,
       username,
       email,
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
       fullName,
       designation: designation || 'User',
       profilePictureUploaded: false,
-      status: isPrivileged ? 'active' : 'pending_approval', // Clear status: PENDING_APPROVAL
+      status: (isPrivileged ? 'active' : 'pending_approval') as const,
       emailVerified: false, // Do NOT verify email on signup
       verificationToken: undefined, // No verification token yet (sent after admin approval)
       verificationSentAt: undefined,
