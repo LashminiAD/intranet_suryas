@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user status is pending approval
-    if (user.status === 'pending_approval' || user.status === 'pending') {
+    if (user.status === 'pending_approval') {
       return NextResponse.json(
         { error: 'Your account is pending admin approval. Please wait for a confirmation email.' },
         { status: 403 }
