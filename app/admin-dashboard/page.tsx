@@ -739,9 +739,26 @@ export default function AdminDashboard() {
 
         {/* Guest Activity Log */}
         <Card className="bg-white p-6">
-          <h2 className="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
-            👥 Guest Activity Log
-          </h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+              👥 Guest Activity Log
+            </h2>
+            {guestLogins.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (confirm('Are you sure you want to clear all guest activity history?')) {
+                    localStorage.removeItem('guestLogins');
+                    setGuestLogins([]);
+                    toast.success('Guest activity history cleared');
+                  }
+                }}
+              >
+                Clear History
+              </Button>
+            )}
+          </div>
           {guestLogins.length === 0 ? (
             <p className="text-sm text-slate-600">No guest visits recorded yet.</p>
           ) : (

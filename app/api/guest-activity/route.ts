@@ -11,6 +11,15 @@ export async function GET(request: NextRequest) {
   }
 }
 
+export async function DELETE(request: NextRequest) {
+  try {
+    guestActivities = [];
+    return NextResponse.json({ success: true, message: 'Guest activities cleared' });
+  } catch (error) {
+    return NextResponse.json({ error: 'Failed to clear guest activities' }, { status: 500 });
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
