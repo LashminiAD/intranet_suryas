@@ -29,8 +29,8 @@ export default function HomePage() {
         return;
       }
 
-      // Non-guest first-time users: show profile setup modal
-      if (user.role !== 'guest' && !user.profilePictureUploaded) {
+      // Non-guest first-time users: show profile setup modal only once
+      if (user.role !== 'guest' && user.role !== 'admin' && user.role !== 'founder' && !user.isProfileCompleted) {
         setShowProfileModal(true);
       }
     }
@@ -253,6 +253,7 @@ export default function HomePage() {
         onClose={() => {
           setShowProfileModal(false);
         }}
+        mode="setup"
       />
     </MainLayout>
   );

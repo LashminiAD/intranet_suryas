@@ -7,7 +7,7 @@ import MainLayout from '@/components/main-layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
-import { ExternalLink, MapPin, Briefcase, Send } from 'lucide-react';
+import { ExternalLink, MapPin, Briefcase, Send, Upload, FileUp } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function RecruitmentPage() {
@@ -17,6 +17,8 @@ export default function RecruitmentPage() {
     role: '',
     experience: '',
     message: '',
+    filledFormFile: null as File | null,
+    filledFormFileName: '',
   });
 
   useEffect(() => {
@@ -28,6 +30,20 @@ export default function RecruitmentPage() {
   if (!isAuthenticated) {
     return <div>Loading...</div>;
   }
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.includes('pdf') && !file.type.includes('image')) {
+      toast.error('Only PDF and image files are allowed');
+      return;
+    }
+    setRequestData((prev) => ({
+      ...prev,
+      filledFormFile: file,
+      filledFormFileName: file.name,
+    }));
+  };
 
   const opportunities = [
     {
@@ -182,39 +198,71 @@ export default function RecruitmentPage() {
           <form
             onSubmit={async (e) => {
               e.preventDefault();
-              if (!requestData.role || !requestData.message) {
-                toast.error('Please fill in role and message');
+              if (!requestData.role || !requestData.message || !requestData.filledFormFile) {
+                toast.error('Please fill in role, message, and upload the filled form');
                 return;
               }
 
-              const response = await fetch('/api/requests', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  type: 'recruitment',
-                  title: 'Recruitment Request',
-                  createdBy: user?.fullName || user?.username || 'User',
-                  createdById: user?.id,
-                  createdByRole: user?.role,
-                  createdByDesignation: user?.designation,
-                  target: 'admin',
-                  payload: {
-                    role: requestData.role,
-                    experience: requestData.experience,
-                    message: requestData.message,
-                    email: user?.email,
-                    submittedAt: new Date().toISOString(),
-                  },
-                }),
-              });
+              const fileToBase64 = (file: File): Promise<string> => {
+                return new Promise((resolve, reject) => {
+                  const reader = new FileReader();
+                  reader.onload = () => resolve(reader.result as string);
+                  reader.onerror = reject;
+                  reader.readAsDataURL(file);
+                });
+              };
 
-              if (!response.ok) {
-                toast.error('Failed to submit recruitment request');
-                return;
+              try {
+                const fileBase64 = await fileToBase64(requestData.filledFormFile);
+                const getSignatureFrom = (designation?: string) => {
+                  const roleValue = (designation || '').toLowerCase();
+                  if (roleValue.includes('intern')) return 'Hareesh';
+                  if (roleValue.includes('freelancer') || roleValue.includes('employee')) return 'Founder';
+                  return 'Admin';
+                };
+
+                const signatureFrom = getSignatureFrom(user?.designation);
+                const response = await fetch('/api/requests', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    type: 'recruitment',
+                    title: 'Recruitment Request',
+                    createdBy: user?.fullName || user?.username || 'User',
+                    createdById: user?.id,
+                    createdByRole: user?.role,
+                    createdByDesignation: user?.designation,
+                    target: 'admin',
+                    signatureFrom,
+                    uploadedFile: {
+                      name: requestData.filledFormFile.name,
+                      size: requestData.filledFormFile.size,
+                      type: requestData.filledFormFile.type,
+                      base64: fileBase64,
+                      uploadedAt: new Date().toISOString(),
+                    },
+                    payload: {
+                      role: requestData.role,
+                      experience: requestData.experience,
+                      message: requestData.message,
+                      email: user?.email,
+                      filledFormFileName: requestData.filledFormFileName,
+                      submittedAt: new Date().toISOString(),
+                    },
+                  }),
+                });
+
+                if (!response.ok) {
+                  toast.error('Failed to submit recruitment request');
+                  return;
+                }
+
+                toast.success('Recruitment request sent to Admin');
+                setRequestData({ role: '', experience: '', message: '', filledFormFile: null, filledFormFileName: '' });
+              } catch (error) {
+                console.error('Error converting file:', error);
+                toast.error('Error processing file. Please try again.');
               }
-
-              toast.success('Recruitment request sent to Admin');
-              setRequestData({ role: '', experience: '', message: '' });
             }}
             className="space-y-4"
           >
@@ -235,6 +283,27 @@ export default function RecruitmentPage() {
               className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-blue-500"
               rows={4}
             />
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Filled Recruitment Form (PDF/Image) *</label>
+              <div className="flex items-center gap-2">
+                <label className="flex-1 flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-blue-300 rounded-lg cursor-pointer hover:bg-blue-50 transition">
+                  <Upload size={18} className="text-blue-600" />
+                  <span className="text-sm text-blue-600 font-medium">Click to upload</span>
+                  <input
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+              {requestData.filledFormFileName && (
+                <div className="mt-2 flex items-center gap-2 text-sm text-green-700 bg-green-50 p-2 rounded">
+                  <FileUp size={16} />
+                  {requestData.filledFormFileName}
+                </div>
+              )}
+            </div>
             <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
               <Send size={16} className="mr-2" /> Submit Request
             </Button>

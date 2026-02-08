@@ -12,7 +12,7 @@ A modern, secure virtual intranet platform built with **Next.js 16**, **React 19
 
 ### 📊 Admin Dashboard
 - **Leave Management** - Approve/reject employee leave requests
-- **TA Claims** - Manage travel allowance claims
+- **Allowance Claims** - Manage travel allowance claims
 - **Project Management** - Track ongoing projects
 - **User Management** - Monitor system users
 - **Analytics & Reports** - Detailed system insights
@@ -21,7 +21,7 @@ A modern, secure virtual intranet platform built with **Next.js 16**, **React 19
 
 ### 👥 Employee Features
 - Leave request submission
-- TA claim filing
+- Allowance claim filing
 - Project creation and tracking
 - Form gallery with downloadable documents
 - Certificate requests
@@ -86,13 +86,13 @@ If the page doesn't load:
 
 ### Admin Login
 - **Role:** Admin
-- **Username:** admin@suryas.com
-- **Password:** Admin@123
+- **Username:** JayendranM
+- **Password:** AdminJ@123
 
 ### User Login
 - **Role:** User
-- **Username:** user@suryas.com
-- **Password:** User@123
+- **Username:** lash
+- **Password:** lash@123
 
 ### Guest Login
 - **Role:** Guest
@@ -205,13 +205,13 @@ For regular users (non-admin):
 | `/forms-gallery` | All | Downloadable forms |
 | `/about-founder` | All | Company information |
 | `/leave-form` | User | Submit leave request |
-| `/ta-claim` | User | Submit TA claim |
+| `/ta-claim` | User | Submit allowance claim |
 | `/project-creation` | User | Create projects |
 | `/recruitment` | User | Recruitment forms |
 | `/sponsorship` | User | Sponsorship requests |
 | `/certificate-request` | User | Request certificates |
 | `/admin/leave-management` | Admin | Manage leave requests |
-| `/admin/ta-claims` | Admin | Manage TA claims |
+| `/admin/ta-claims` | Admin | Manage allowance claims |
 | `/admin/project-approvals` | Admin | Approve projects |
 | `/admin/user-management` | Admin | Manage users |
 | `/admin/reports` | Admin | System reports |

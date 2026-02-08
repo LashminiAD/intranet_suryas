@@ -143,6 +143,8 @@ export const ProfileSetupModal: React.FC<ProfileSetupModalProps> = ({ isOpen, on
         }
       } else {
         updatePayload.phone = phone.trim();
+        updatePayload.isProfileCompleted = true;
+        updatePayload.profileCompletedAt = new Date().toISOString();
       }
 
       await updateProfile(updatePayload);

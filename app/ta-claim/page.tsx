@@ -57,59 +57,96 @@ export default function TAClaimPage(): React.ReactNode {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.amount || !formData.description || !formData.filledFormFile) {
-      toast.error('Please fill in all required fields and upload the filled form');
+    if (!formData.amount || !formData.description) {
+      toast.error('Please fill in all required fields');
       return;
     }
 
-    const needsFounderSignature = /(freelancer|employee)/i.test(user?.designation || '');
-    const target = needsFounderSignature ? 'founder' : 'admin';
+    const getSignatureFrom = (designation?: string) => {
+      const roleValue = (designation || '').toLowerCase();
+      if (roleValue.includes('intern')) return 'Hareesh';
+      if (roleValue.includes('freelancer') || roleValue.includes('employee')) return 'Founder';
+      return 'Admin';
+    };
 
-    const response = await fetch('/api/requests', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        type: 'ta',
-        title: 'TA Claim Request',
-        createdBy: user?.fullName || user?.username || 'User',
-        createdById: user?.id,
-        createdByRole: user?.role,
-        createdByDesignation: user?.designation,
-        target,
-        payload: {
-          name: formData.name,
-          id: formData.id,
-          designation: formData.designation,
-          email: formData.email,
-          claimType: formData.claimType,
-          amount: formData.amount,
-          description: formData.description,
-          filledFormFileName: formData.filledFormFileName,
-          billFileName: formData.billFileName,
-          submittedAt: new Date().toISOString(),
-        },
-      }),
-    });
+    const signatureFrom = getSignatureFrom(user?.designation);
+    const target = signatureFrom === 'Founder' ? 'founder' : 'admin';
 
-    if (!response.ok) {
-      toast.error('Failed to submit TA claim');
-      return;
+    // Convert file to base64
+    const fileToBase64 = (file: File): Promise<string> => {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    };
+
+    try {
+      const fileBase64 = formData.filledFormFile
+        ? await fileToBase64(formData.filledFormFile)
+        : null;
+
+      const response = await fetch('/api/requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'ta',
+          title: 'Allowance Claim Request',
+          createdBy: user?.fullName || user?.username || 'User',
+          createdById: user?.id,
+          createdByRole: user?.role,
+          createdByDesignation: user?.designation,
+          target,
+          uploadedFile: fileBase64 && formData.filledFormFile
+            ? {
+                name: formData.filledFormFile.name,
+                size: formData.filledFormFile.size,
+                type: formData.filledFormFile.type,
+                base64: fileBase64,
+                uploadedAt: new Date().toISOString(),
+              }
+            : undefined,
+          signatureFrom,
+          payload: {
+            name: formData.name,
+            id: formData.id,
+            designation: formData.designation,
+            email: formData.email,
+            claimType: formData.claimType,
+            amount: formData.amount,
+            description: formData.description,
+            filledFormFileName: formData.filledFormFileName,
+            billFileName: formData.billFileName,
+            submittedAt: new Date().toISOString(),
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        toast.error('Failed to submit allowance claim');
+        return;
+      }
+
+      toast.success('Allowance claim submitted successfully!');
+      setFormData({
+        name: user?.fullName || '',
+        id: user?.id || '',
+        designation: user?.designation || '',
+        email: user?.email || '',
+        claimType: 'expenses',
+        amount: '',
+        description: '',
+        filledFormFile: null,
+        filledFormFileName: '',
+        billFile: null,
+        billFileName: '',
+      });
+      router.push('/dashboard');
+    } catch (error) {
+      console.error('Error converting file:', error);
+      toast.error('Error processing file. Please try again.');
     }
-
-    toast.success('TA Claim submitted successfully!');
-    setFormData({
-      name: user?.fullName || '',
-      id: user?.id || '',
-      designation: user?.designation || '',
-      email: user?.email || '',
-      claimType: 'expenses',
-      amount: '',
-      description: '',
-      filledFormFile: null,
-      filledFormFileName: '',
-      billFile: null,
-      billFileName: '',
-    });
   };
 
   if (!isAuthenticated) {
@@ -121,8 +158,8 @@ export default function TAClaimPage(): React.ReactNode {
       <div className="max-w-6xl grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Main Form - 3 columns */}
         <div className="lg:col-span-3">
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">TA & Travel Claim</h1>
-          <p className="text-slate-600 mb-6">Submit your travel allowance and expense claims</p>
+          <h1 className="text-3xl font-bold text-slate-900 mb-2">Allowance Claim</h1>
+          <p className="text-slate-600 mb-6">Submit your allowance and expense claims</p>
 
           <Card className="bg-white p-8">
             <form onSubmit={handleSubmit} className="space-y-6">
@@ -205,11 +242,11 @@ export default function TAClaimPage(): React.ReactNode {
                 </div>
 
                 <div className="bg-amber-50 border border-amber-300 rounded-lg p-4">
-                  <p className="text-sm font-semibold text-amber-900 mb-2">⚠️ Mandatory: Upload Filled Form</p>
+                  <p className="text-sm font-semibold text-amber-900 mb-2">Optional: Upload Filled Form</p>
                   <p className="text-xs text-amber-800 mb-3">
-                    Before submitting, download the TA Claim form from the <a href="/forms-gallery" className="underline font-medium">Forms Gallery</a>, fill it completely, and upload it here.
+                    If available, download the Allowance Claim form from the <a href="/forms-gallery" className="underline font-medium">Forms Gallery</a>, fill it completely, and upload it here.
                   </p>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Filled TA Claim Form (PDF or Image) *</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Filled Allowance Claim Form (PDF or Image)</label>
                   <div className="flex items-center gap-2">
                     <label className="flex-1 flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-amber-400 rounded-lg cursor-pointer hover:bg-amber-100 transition">
                       <Upload size={18} className="text-amber-700" />

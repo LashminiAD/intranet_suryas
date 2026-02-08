@@ -34,7 +34,6 @@ import {
   User,
   Share2,
   CreditCard,
-  Bell,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -50,9 +49,6 @@ export default function MainLayout({ children }: MainLayoutProps) {
   const [selectedQR, setSelectedQR] = useState<any>(null);
   const [showQRModal, setShowQRModal] = useState(false);
   const [showProfileEditor, setShowProfileEditor] = useState(false);
-  const [accessRequests, setAccessRequests] = useState<any[]>([]);
-  const [approverEmail, setApproverEmail] = useState<string>('');
-  const [loadingRequests, setLoadingRequests] = useState(false);
 
   const isFounder = user?.role === 'founder';
   const isAdmin = user?.role === 'admin' || isFounder;
@@ -72,29 +68,6 @@ export default function MainLayout({ children }: MainLayoutProps) {
     return () => clearInterval(timer);
   }, []);
 
-  const fetchAccessRequests = async () => {
-    if (!isAdmin) return;
-    setLoadingRequests(true);
-    try {
-      const response = await fetch('/api/admin/access-requests');
-      if (!response.ok) {
-        throw new Error('Failed to load access requests');
-      }
-      const data = await response.json();
-      setAccessRequests(data.requests || []);
-      setApproverEmail(data.approver || '');
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoadingRequests(false);
-    }
-  };
-
-  React.useEffect(() => {
-    fetchAccessRequests();
-    const interval = setInterval(fetchAccessRequests, 30000);
-    return () => clearInterval(interval);
-  }, [isAdmin]);
 
   const handleLogout = () => {
     logout();
@@ -109,7 +82,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
   const adminNavItems = [
     { label: 'Dashboard', icon: Home, href: '/admin-dashboard' },
     { label: 'Leave Management', icon: FileText, href: '/admin/leave-management' },
-    { label: 'TA Claims', icon: DollarSign, href: '/admin/ta-claims' },
+    { label: 'Allowance Claims', icon: DollarSign, href: '/admin/ta-claims' },
     { label: 'Project Approvals', icon: FolderPlus, href: '/admin/project-approvals' },
     { label: 'User Management', icon: Users, href: '/admin/user-management' },
     { label: 'Reports', icon: BarChart3, href: '/admin/reports' },
@@ -129,7 +102,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
   const employeeNavItems = [
     { label: 'Dashboard', icon: Home, href: '/dashboard' },
     { label: 'Leave Form', icon: FileText, href: '/leave-form' },
-    { label: 'TA Claim', icon: DollarSign, href: '/ta-claim' },
+    { label: 'Allowance Claim', icon: DollarSign, href: '/ta-claim' },
     { label: 'Proposal', icon: FolderPlus, href: '/project-creation' },
     { label: 'Reports', icon: BarChart3, href: '/reports' },
     { label: 'Recruitment', icon: Users, href: '/recruitment' },
@@ -288,89 +261,6 @@ export default function MainLayout({ children }: MainLayoutProps) {
 
             {/* User Profile Dropdown */}
             <div className="flex items-center gap-2">
-              {isAdmin && (
-                <DropdownMenu onOpenChange={(open) => open && fetchAccessRequests()}>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="relative">
-                      <Bell size={20} />
-                      {accessRequests.length > 0 && (
-                        <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] rounded-full px-1.5 py-0.5">
-                          {accessRequests.length}
-                        </span>
-                      )}
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-80">
-                    <DropdownMenuLabel>Access Requests</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    {loadingRequests && (
-                      <div className="px-4 py-3 text-sm text-slate-500">Loading requests...</div>
-                    )}
-                    {!loadingRequests && accessRequests.length === 0 && (
-                      <div className="px-4 py-3 text-sm text-slate-500">No pending requests</div>
-                    )}
-                    {!loadingRequests && accessRequests.length > 0 && (
-                      <div className="space-y-3 px-3 pb-3">
-                        {accessRequests.map((request) => (
-                          <div key={request.id} className="border rounded-lg p-3">
-                            <p className="text-sm font-semibold text-slate-900">{request.fullName}</p>
-                            <p className="text-xs text-slate-500">{request.email}</p>
-                            <p className="text-xs text-slate-400 mt-1">
-                              Requested: {new Date(request.requestedAt).toLocaleString('en-IN')}
-                            </p>
-                            <div className="mt-3 flex gap-2">
-                              <Button
-                                size="sm"
-                                className="bg-green-600 hover:bg-green-700 text-xs"
-                                onClick={async () => {
-                                  const response = await fetch('/api/admin/access-requests', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ action: 'approve', userId: request.id }),
-                                  });
-                                  if (!response.ok) {
-                                    toast.error('Unable to approve request');
-                                    return;
-                                  }
-                                  const data = await response.json();
-                                  const credentials = data.credentials;
-                                  toast.success(
-                                    `Access approved. Email sent to ${credentials.email} with username ${credentials.username} and password ${credentials.password}. User can change credentials after login.`
-                                  );
-                                  fetchAccessRequests();
-                                }}
-                              >
-                                Approve
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                                className="text-xs"
-                                onClick={async () => {
-                                  const response = await fetch('/api/admin/access-requests', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ action: 'deny', userId: request.id }),
-                                  });
-                                  if (!response.ok) {
-                                    toast.error('Unable to deny request');
-                                    return;
-                                  }
-                                  toast.success('Request denied');
-                                  fetchAccessRequests();
-                                }}
-                              >
-                                Deny
-                              </Button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
-
               {/* Notification Bell */}
               {!isGuest && <NotificationBell />}
 

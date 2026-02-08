@@ -1,0 +1,211 @@
+[
+  {
+    "type": "circular",
+    "title": "New Circular Posted",
+    "message": "iuguhg (Notice)",
+    "targetUser": "all",
+    "read": false,
+    "id": "notif-1770544820306-lfs3oo3qo",
+    "timestamp": "2026-02-08T10:00:20.306Z"
+  },
+  {
+    "type": "user_approved",
+    "title": "User Approved: SANTHANAKUAMR V",
+    "message": "Access approved for technicalteam@suryas.in.",
+    "targetUser": "founder",
+    "relatedId": "user-1770542223056",
+    "read": true,
+    "id": "notif-1770542773497-q7nusfi3r",
+    "timestamp": "2026-02-08T09:26:13.497Z"
+  },
+  {
+    "type": "user_approved",
+    "title": "User Approved: SANTHANAKUAMR V",
+    "message": "Access approved for technicalteam@suryas.in.",
+    "targetUser": "admin",
+    "relatedId": "user-1770542223056",
+    "read": true,
+    "id": "notif-1770542773495-kg6a5cwpl",
+    "timestamp": "2026-02-08T09:26:13.495Z"
+  },
+  {
+    "type": "user_approved",
+    "title": "User Approved: SANTHANA KUAMR V",
+    "message": "Access approved for technicalteam@suryas.in.",
+    "targetUser": "founder",
+    "relatedId": "user-1770541495649",
+    "read": true,
+    "id": "notif-1770542772220-59exwa91z",
+    "timestamp": "2026-02-08T09:26:12.220Z"
+  },
+  {
+    "type": "user_approved",
+    "title": "User Approved: SANTHANA KUAMR V",
+    "message": "Access approved for technicalteam@suryas.in.",
+    "targetUser": "admin",
+    "relatedId": "user-1770541495649",
+    "read": true,
+    "id": "notif-1770542772212-zagv20iux",
+    "timestamp": "2026-02-08T09:26:12.212Z"
+  },
+  {
+    "type": "user_approved",
+    "title": "User Approved: sanjay",
+    "message": "Access approved for sec23ci058@sairamtap.edu.in.",
+    "targetUser": "founder",
+    "relatedId": "user-1770542372370",
+    "read": true,
+    "id": "notif-1770542770320-r84fxxi5c",
+    "timestamp": "2026-02-08T09:26:10.320Z"
+  },
+  {
+    "type": "user_approved",
+    "title": "User Approved: sanjay",
+    "message": "Access approved for sec23ci058@sairamtap.edu.in.",
+    "targetUser": "admin",
+    "relatedId": "user-1770542372370",
+    "read": true,
+    "id": "notif-1770542770317-us4jfpxxt",
+    "timestamp": "2026-02-08T09:26:10.317Z"
+  },
+  {
+    "type": "user_access_request",
+    "title": "New User Access Request - sanjay",
+    "message": "sanjay (sec23ci058@sairamtap.edu.in) has requested access. Click to review and approve/reject.",
+    "targetUser": "founder",
+    "relatedId": "user-1770542372370",
+    "read": true,
+    "id": "notif-1770542372374-dl7oevihp",
+    "timestamp": "2026-02-08T09:19:32.374Z"
+  },
+  {
+    "type": "user_access_request",
+    "title": "New User Access Request - sanjay",
+    "message": "sanjay (sec23ci058@sairamtap.edu.in) has requested access. Click to review and approve/reject.",
+    "targetUser": "admin",
+    "relatedId": "user-1770542372370",
+    "read": true,
+    "id": "notif-1770542372372-fe5nhyy57",
+    "timestamp": "2026-02-08T09:19:32.372Z"
+  },
+  {
+    "type": "user_approved",
+    "title": "User Approved: SANTHANAKUAMR V",
+    "message": "Access approved for technicalteam@suryas.in.",
+    "targetUser": "founder",
+    "relatedId": "user-1770542223056",
+    "read": true,
+    "id": "notif-1770542317692-lj3sxb2rl",
+    "timestamp": "2026-02-08T09:18:37.692Z"
+  },
+  {
+    "type": "user_approved",
+    "title": "User Approved: SANTHANAKUAMR V",
+    "message": "Access approved for technicalteam@suryas.in.",
+    "targetUser": "admin",
+    "relatedId": "user-1770542223056",
+    "read": true,
+    "id": "notif-1770542317689-nnm9r0r84",
+    "timestamp": "2026-02-08T09:18:37.689Z"
+  },
+  {
+    "type": "user_approved",
+    "title": "User Approved: SANTHANA KUAMR V",
+    "message": "Access approved for technicalteam@suryas.in.",
+    "targetUser": "founder",
+    "relatedId": "user-1770541495649",
+    "read": true,
+    "id": "notif-1770542259737-ljaa56lyh",
+    "timestamp": "2026-02-08T09:17:39.737Z"
+  },
+  {
+    "type": "user_approved",
+    "title": "User Approved: SANTHANA KUAMR V",
+    "message": "Access approved for technicalteam@suryas.in.",
+    "targetUser": "admin",
+    "relatedId": "user-1770541495649",
+    "read": true,
+    "id": "notif-1770542259734-mwepj3ric",
+    "timestamp": "2026-02-08T09:17:39.734Z"
+  },
+  {
+    "type": "user_access_request",
+    "title": "New User Access Request - SANTHANAKUAMR V",
+    "message": "SANTHANAKUAMR V (technicalteam@suryas.in) has requested access. Click to review and approve/reject.",
+    "targetUser": "founder",
+    "relatedId": "user-1770542223056",
+    "read": true,
+    "id": "notif-1770542223062-bwgl5ct9d",
+    "timestamp": "2026-02-08T09:17:03.062Z"
+  },
+  {
+    "type": "user_access_request",
+    "title": "New User Access Request - SANTHANAKUAMR V",
+    "message": "SANTHANAKUAMR V (technicalteam@suryas.in) has requested access. Click to review and approve/reject.",
+    "targetUser": "admin",
+    "relatedId": "user-1770542223056",
+    "read": true,
+    "id": "notif-1770542223060-ol7chasv7",
+    "timestamp": "2026-02-08T09:17:03.060Z"
+  },
+  {
+    "type": "user_access_request",
+    "title": "New User Access Request - SANTHANA KUAMR V",
+    "message": "SANTHANA KUAMR V (technicalteam@suryas.in) has requested access. Click to review and approve/reject.",
+    "targetUser": "founder",
+    "relatedId": "user-1770541495649",
+    "read": true,
+    "id": "notif-1770541495656-qn5op0p17",
+    "timestamp": "2026-02-08T09:04:55.656Z"
+  },
+  {
+    "type": "user_access_request",
+    "title": "New User Access Request - SANTHANA KUAMR V",
+    "message": "SANTHANA KUAMR V (technicalteam@suryas.in) has requested access. Click to review and approve/reject.",
+    "targetUser": "admin",
+    "relatedId": "user-1770541495649",
+    "read": true,
+    "id": "notif-1770541495653-tdr08dtmo",
+    "timestamp": "2026-02-08T09:04:55.653Z"
+  },
+  {
+    "type": "user_approved",
+    "title": "User Approved: ayesha",
+    "message": "Access approved for sec23ci058@sairamtap.edu.in. Verification email sent.",
+    "targetUser": "all",
+    "relatedId": "user-1770540591519",
+    "read": true,
+    "id": "notif-1770540608225-aetnshg8y",
+    "timestamp": "2026-02-08T08:50:08.225Z"
+  },
+  {
+    "type": "user_access_request",
+    "title": "New User Access Request - ayesha",
+    "message": "ayesha (sec23ci058@sairamtap.edu.in) has requested access. Click to review and approve/reject.",
+    "targetUser": "all",
+    "relatedId": "user-1770540591519",
+    "read": true,
+    "id": "notif-1770540591522-7jwa8mfys",
+    "timestamp": "2026-02-08T08:49:51.522Z"
+  },
+  {
+    "type": "user_access_request",
+    "title": "New User Access Request - krish",
+    "message": "krish (sec23ci058@sairamtap.edu.in) has requested access. Click to review and approve/reject.",
+    "targetUser": "all",
+    "relatedId": "user-1770530293270",
+    "read": true,
+    "id": "notif-1770530293273-mk3a87k6d",
+    "timestamp": "2026-02-08T05:58:13.273Z"
+  },
+  {
+    "type": "user_access_request",
+    "title": "New User Access Request - krish",
+    "message": "krish (sec23ci058@sairamtap.edu.in) has requested access. Click to review and approve/reject.",
+    "targetUser": "all",
+    "relatedId": "user-1770529558540",
+    "read": true,
+    "id": "notif-1770529558545-a44r38alr",
+    "timestamp": "2026-02-08T05:45:58.545Z"
+  }
+]

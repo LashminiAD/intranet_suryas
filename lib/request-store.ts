@@ -1,6 +1,14 @@
 export type RequestTarget = 'admin' | 'founder' | 'all';
 export type RequestStatus = 'pending' | 'approved' | 'rejected' | 'signed' | 'forwarded';
-export type RequestType = 'leave' | 'ta' | 'proposal' | 'report' | 'recruitment';
+export type RequestType = 'leave' | 'ta' | 'proposal' | 'report' | 'recruitment' | 'certificate';
+
+export interface UploadedFile {
+  name: string;
+  size: number;
+  type: string;
+  base64: string;
+  uploadedAt: string;
+}
 
 export interface RequestItem {
   id: string;
@@ -16,6 +24,14 @@ export interface RequestItem {
   createdAt: string;
   updatedAt?: string;
   forwardedTo?: string;
+  uploadedFile?: UploadedFile;
+  signatureFrom?: string;
+  signatureStatus?: 'pending' | 'signed' | 'rejected';
+  circular?: {
+    title: string;
+    content: string;
+    recipients: string[];
+  };
 }
 
 const requests: RequestItem[] = [];

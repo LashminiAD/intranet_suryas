@@ -85,7 +85,7 @@ export default function AboutFounderPage() {
               <img src={logoImg} alt="Proposal Logo" className="w-full h-full object-cover" />
             </div>
             <div>
-              <h1 className="text-4xl font-bold mb-4">Proposal</h1>
+              <h1 className="text-4xl font-bold mb-4">Surya's MiB Enterprises</h1>
               <p className="text-xl text-blue-100 mb-6">
                 "Bringing clarity and collaboration: Proposal - Illuminating Teams with Innovation!"
               </p>

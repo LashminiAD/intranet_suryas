@@ -237,7 +237,7 @@ export default function LoginPage() {
             {/* Links */}
             <div className="mt-6 pt-6 border-t border-slate-200">
               <div className="flex justify-between items-center text-sm mb-4">
-                <a href="#" className="text-blue-600 hover:text-blue-700 font-medium hover:underline">
+                <a href="/forgot-password" className="text-blue-600 hover:text-blue-700 font-medium hover:underline">
                   Forgot Password?
                 </a>
                 <button

@@ -8,6 +8,7 @@ import { CheckCircle, XCircle, Clock, Search, Filter, DollarSign, FileDown, Eye 
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
+import FileViewerModal from '@/components/file-viewer-modal';
 
 export default function TAClaims() {
   const { isAuthenticated } = useAuth();
@@ -16,6 +17,7 @@ export default function TAClaims() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [selectedClaim, setSelectedClaim] = useState<any | null>(null);
+  const [viewingFile, setViewingFile] = useState<any>(null);
   const [commentText, setCommentText] = useState('');
 
   useEffect(() => {
@@ -49,7 +51,7 @@ export default function TAClaims() {
       return;
     }
 
-    toast.success('✅ TA Claim approved!');
+    toast.success('✅ Allowance claim approved!');
   };
 
   const handleReject = async (id: string) => {
@@ -60,11 +62,24 @@ export default function TAClaims() {
     });
 
     if (!response.ok) {
-      toast.error('❌ TA Claim rejected!');
+      toast.error('❌ Allowance claim rejected!');
       return;
     }
 
-    toast.error('❌ TA Claim rejected!');
+    toast.error('❌ Allowance claim rejected!');
+  };
+
+  const downloadUploadedFile = (claim: any) => {
+    if (!claim.uploadedFile) {
+      toast.error('No file available');
+      return;
+    }
+    const link = document.createElement('a');
+    link.href = claim.uploadedFile.base64;
+    link.download = claim.uploadedFile.name;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const downloadRequestPdf = (claim: any) => {
@@ -99,22 +114,12 @@ export default function TAClaims() {
     setTimeout(() => pdfWindow.print(), 300);
   };
 
-  const viewProof = (claim: any) => {
-    const billUrl = claim.payload?.billUrl || claim.payload?.billFile;
-    if (!billUrl) {
-      toast.error('No proof document attached');
+  const viewUploadedFile = (claim: any) => {
+    if (!claim.uploadedFile) {
+      toast.error('No file available');
       return;
     }
-    window.open(billUrl, '_blank');
-  };
-
-  const viewFilledForm = (claim: any) => {
-    const formUrl = claim.payload?.filledFormUrl || claim.payload?.filledFormFile;
-    if (!formUrl) {
-      toast.error('No filled form attached');
-      return;
-    }
-    window.open(formUrl, '_blank');
+    setViewingFile(claim.uploadedFile);
   };
 
   const filteredClaims = taClaims
@@ -146,7 +151,7 @@ export default function TAClaims() {
     <MainLayout>
       <div className="max-w-7xl space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">💰 TA Claims Management</h1>
+          <h1 className="text-3xl font-bold text-slate-900">💰 Allowance Claims Management</h1>
           <p className="text-slate-600">Review and approve/reject travel allowance claims</p>
         </div>
 
@@ -208,7 +213,7 @@ export default function TAClaims() {
         <div className="space-y-4">
           {filteredClaims.length === 0 ? (
             <Card className="p-8 text-center">
-              <p className="text-slate-600">No TA claims found</p>
+              <p className="text-slate-600">No allowance claims found</p>
             </Card>
           ) : (
             filteredClaims.map((claim) => (
@@ -286,18 +291,18 @@ export default function TAClaims() {
                         <Button size="sm" variant="outline" className="w-full" onClick={() => setSelectedClaim(claim)}>
                           <Eye size={14} className="mr-1" /> View
                         </Button>
-                        {claim.payload?.filledFormFileName && (
-                          <Button size="sm" variant="outline" className="w-full bg-amber-50 hover:bg-amber-100" onClick={() => viewFilledForm(claim)}>
+                        {claim.uploadedFile && (
+                          <Button size="sm" variant="outline" className="w-full" onClick={() => viewUploadedFile(claim)}>
                             <FileDown size={14} className="mr-1" /> View Form
                           </Button>
                         )}
-                        {claim.payload?.billFileName && (
-                          <Button size="sm" variant="outline" className="w-full bg-blue-50 hover:bg-blue-100" onClick={() => viewProof(claim)}>
-                            <FileDown size={14} className="mr-1" /> View Proofs
+                        {claim.uploadedFile && (
+                          <Button size="sm" variant="outline" className="w-full" onClick={() => downloadUploadedFile(claim)}>
+                            <FileDown size={14} className="mr-1" /> Download Form
                           </Button>
                         )}
                         <Button size="sm" variant="outline" className="w-full" onClick={() => downloadRequestPdf(claim)}>
-                          <FileDown size={14} className="mr-1" /> Download
+                          <FileDown size={14} className="mr-1" /> Summary
                         </Button>
                         <Button size="sm" className="bg-green-500 hover:bg-green-600 text-white w-full" onClick={() => handleApprove(claim.id)}>
                           ✓ Approve
@@ -314,18 +319,18 @@ export default function TAClaims() {
                     <Button size="sm" variant="outline" onClick={() => setSelectedClaim(claim)}>
                       <Eye size={14} className="mr-1" /> View
                     </Button>
-                    {claim.payload?.filledFormFileName && (
-                      <Button size="sm" variant="outline" className="bg-amber-50 hover:bg-amber-100" onClick={() => viewFilledForm(claim)}>
+                    {claim.uploadedFile && (
+                      <Button size="sm" variant="outline" onClick={() => viewUploadedFile(claim)}>
                         <FileDown size={14} className="mr-1" /> View Form
                       </Button>
                     )}
-                    {claim.payload?.billFileName && (
-                      <Button size="sm" variant="outline" className="bg-blue-50 hover:bg-blue-100" onClick={() => viewProof(claim)}>
-                        <FileDown size={14} className="mr-1" /> View Proofs
+                    {claim.uploadedFile && (
+                      <Button size="sm" variant="outline" onClick={() => downloadUploadedFile(claim)}>
+                        <FileDown size={14} className="mr-1" /> Download Form
                       </Button>
                     )}
                     <Button size="sm" variant="outline" onClick={() => downloadRequestPdf(claim)}>
-                      <FileDown size={14} className="mr-1" /> Download
+                      <FileDown size={14} className="mr-1" /> Summary
                     </Button>
                   </div>
                 )}
@@ -338,15 +343,30 @@ export default function TAClaims() {
       {selectedClaim && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <Card className="bg-white w-full max-w-lg p-6 space-y-4">
-            <h2 className="text-xl font-bold text-slate-900">TA Claim Details</h2>
+            <h2 className="text-xl font-bold text-slate-900">Allowance Claim Details</h2>
             <div className="space-y-2 text-sm text-slate-700">
               <p><strong>Employee:</strong> {selectedClaim.createdBy}</p>
               <p><strong>Amount:</strong> ₹{selectedClaim.payload?.amount}</p>
               <p><strong>Description:</strong> {selectedClaim.payload?.description}</p>
               <p><strong>Status:</strong> {selectedClaim.status}</p>
               <p><strong>Receipt:</strong> {selectedClaim.payload?.billFileName || 'Not provided'}</p>
+              {selectedClaim.uploadedFile && (
+                <p><strong>Uploaded Form:</strong> {selectedClaim.uploadedFile.name}</p>
+              )}
             </div>
             <div className="flex gap-2">
+              {selectedClaim.uploadedFile && (
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setViewingFile(selectedClaim.uploadedFile);
+                    setSelectedClaim(null);
+                  }}
+                  className="flex-1"
+                >
+                  View Form
+                </Button>
+              )}
               <Button variant="outline" onClick={() => setSelectedClaim(null)} className="flex-1">
                 Close
               </Button>
@@ -354,6 +374,8 @@ export default function TAClaims() {
           </Card>
         </div>
       )}
+
+      <FileViewerModal file={viewingFile} onClose={() => setViewingFile(null)} />
     </MainLayout>
   );
 }

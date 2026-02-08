@@ -18,25 +18,6 @@ interface CircularEntry {
   details: string;
 }
 
-const defaultCirculars: CircularEntry[] = [
-  {
-    id: 'circ-001',
-    title: 'Quarterly Review Meeting',
-    date: '2026-02-10',
-    time: '10:30 AM',
-    category: 'Notice',
-    details: 'All departments must submit quarterly performance summaries.',
-  },
-  {
-    id: 'circ-002',
-    title: 'Medical Camp',
-    date: '2026-02-14',
-    time: '09:00 AM',
-    category: 'Camp',
-    details: 'Free medical camp for employees and families at the main hall.',
-  },
-];
-
 export default function CircularsPage() {
   const { isAuthenticated, user } = useAuth();
   const router = useRouter();
@@ -61,20 +42,33 @@ export default function CircularsPage() {
       router.push('/homepage');
       return;
     }
-
-    const stored = localStorage.getItem('circulars');
-    if (stored) {
-      setCirculars(JSON.parse(stored));
-    } else {
-      localStorage.setItem('circulars', JSON.stringify(defaultCirculars));
-      setCirculars(defaultCirculars);
-    }
   }, [isAuthenticated, router, user]);
 
-  const saveCirculars = (next: CircularEntry[]) => {
-    setCirculars(next);
-    localStorage.setItem('circulars', JSON.stringify(next));
+  const fetchCirculars = async () => {
+    try {
+      const response = await fetch('/api/circulars');
+      if (!response.ok) return;
+      const data = await response.json();
+      const mapped = (data.circulars || []).map((c: any) => ({
+        id: c.id,
+        title: c.title,
+        date: c.meta?.date || new Date(c.postedAt).toLocaleDateString('en-IN'),
+        time: c.meta?.time || new Date(c.postedAt).toLocaleTimeString('en-IN'),
+        category: c.meta?.category || 'Notice',
+        details: c.content,
+      }));
+      setCirculars(mapped);
+    } catch (error) {
+      console.error('Failed to fetch circulars:', error);
+    }
   };
+
+  useEffect(() => {
+    if (!isAuthenticated || (user?.role !== 'admin' && user?.role !== 'founder')) return;
+    fetchCirculars();
+    const interval = setInterval(fetchCirculars, 15000);
+    return () => clearInterval(interval);
+  }, [isAuthenticated, user]);
 
   const openModal = (entry?: CircularEntry) => {
     if (entry) {
@@ -98,23 +92,64 @@ export default function CircularsPage() {
       toast.error('Title and date are required');
       return;
     }
+    const save = async () => {
+      try {
+        if (editing) {
+          const response = await fetch('/api/circulars', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: editing.id, updates: formData }),
+          });
+          if (!response.ok) {
+            toast.error('Failed to update circular');
+            return;
+          }
+          toast.success('Circular updated');
+        } else {
+          const response = await fetch('/api/circulars', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              title: formData.title,
+              content: formData.details,
+              postedBy: user?.fullName || user?.username || 'Admin',
+              postedByRole: user?.role || 'admin',
+              priority: 'medium',
+              meta: {
+                date: formData.date,
+                time: formData.time,
+                category: formData.category,
+              },
+            }),
+          });
+          if (!response.ok) {
+            toast.error('Failed to add circular');
+            return;
+          }
 
-    if (editing) {
-      const updated = circulars.map((item) =>
-        item.id === editing.id ? { ...item, ...formData } : item
-      );
-      saveCirculars(updated);
-      toast.success('Circular updated');
-    } else {
-      const newCircular: CircularEntry = {
-        id: `circ-${Date.now()}`,
-        ...formData,
-      };
-      saveCirculars([newCircular, ...circulars]);
-      toast.success('Circular added');
-    }
+          await fetch('/api/notifications', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'circular',
+              title: 'New Circular Posted',
+              message: `${formData.title} (${formData.category})`,
+              targetUser: 'all',
+            }),
+          });
 
-    setShowModal(false);
+          toast.success('Circular added and notification sent');
+        }
+
+        setShowModal(false);
+        fetchCirculars();
+      } catch (error) {
+        console.error('Circular save error:', error);
+        toast.error('Unable to save circular');
+      }
+    };
+
+    save();
   };
 
   if (!isAuthenticated) {

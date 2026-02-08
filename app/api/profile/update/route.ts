@@ -1,24 +1,57 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import { findUserByUsername, updateUser } from '@/lib/user-database';
+import { findUserByUsername, updateUser, findUserById } from '@/lib/user-database';
+import { updateUserInDB, updateUserByUsernameInDB } from '@/lib/user-db';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { currentUsername, updates } = body as {
-      currentUsername: string;
-      updates: {
-        username?: string;
-        email?: string;
-        fullName?: string;
-        phone?: string;
-        designation?: string;
-        profilePhoto?: string;
-        profilePictureUploaded?: boolean;
-        password?: string;
-      };
+    const {
+      currentUsername,
+      userId,
+      updates,
+      phone,
+      profilePhoto,
+      selectedRole,
+      isProfileCompleted,
+    } = body as {
+      currentUsername?: string;
+      userId?: string;
+      updates?: any;
+      phone?: string;
+      profilePhoto?: string;
+      selectedRole?: string;
+      isProfileCompleted?: boolean;
     };
 
+    // Handle profile setup completion (one-time setup)
+    if (userId && isProfileCompleted) {
+      const user = findUserById(userId);
+      if (!user) {
+        return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      }
+
+      const updatePayload: any = {
+        phone,
+        profilePhoto,
+        selectedRole,
+        isProfileCompleted: true,
+        profileCompletedAt: new Date().toISOString(),
+      };
+
+      // Update in memory and persist to file
+      updateUser(user.username, updatePayload);
+      const persisted = updateUserInDB(userId, updatePayload);
+      
+      if (!persisted) {
+        return NextResponse.json({ error: 'Failed to update user' }, { status: 500 });
+      }
+
+      const { passwordHash, ...userWithoutPassword } = persisted;
+      return NextResponse.json({ success: true, user: userWithoutPassword });
+    }
+
+    // Handle regular profile updates
     if (!currentUsername || !updates) {
       return NextResponse.json({ error: 'Missing update payload' }, { status: 400 });
     }
@@ -42,13 +75,15 @@ export async function POST(request: NextRequest) {
       delete updatePayload.password;
     }
 
-    const updatedUser = updateUser(currentUsername, updatePayload);
+    // Update in memory and persist to file
+    updateUser(currentUsername, updatePayload);
+    const persisted = updateUserByUsernameInDB(currentUsername, updatePayload);
 
-    if (!updatedUser) {
+    if (!persisted) {
       return NextResponse.json({ error: 'Failed to update user' }, { status: 500 });
     }
 
-    const { passwordHash, ...userWithoutPassword } = updatedUser;
+    const { passwordHash, ...userWithoutPassword } = persisted;
 
     return NextResponse.json({ success: true, user: userWithoutPassword });
   } catch (error) {

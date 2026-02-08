@@ -53,41 +53,75 @@ export default function ReportsPage() {
       return;
     }
 
-    const response = await fetch('/api/requests', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        type: 'report',
-        title: `${reportType === 'weekly' ? 'Weekly' : 'Monthly'} Report`,
-        createdBy: user?.fullName || user?.username || 'User',
-        createdById: user?.id,
-        createdByRole: user?.role,
-        createdByDesignation: user?.designation,
-        target: 'founder',
-        payload: {
-          name: formData.name,
-          id: formData.id,
-          reportContent: formData.reportContent,
-          reportFileName: formData.reportFileName,
-          reportType,
-          submittedAt: new Date().toISOString(),
-        },
-      }),
-    });
+    const fileToBase64 = (file: File): Promise<string> => {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    };
 
-    if (!response.ok) {
-      toast.error('Failed to submit report');
-      return;
+    try {
+      const fileBase64 = await fileToBase64(formData.reportFile);
+      const getSignatureFrom = (designation?: string) => {
+        const roleValue = (designation || '').toLowerCase();
+        if (roleValue.includes('intern')) return 'Hareesh';
+        if (roleValue.includes('freelancer') || roleValue.includes('employee')) return 'Founder';
+        return 'Admin';
+      };
+
+      const signatureFrom = getSignatureFrom(user?.designation);
+      const target = signatureFrom === 'Founder' ? 'founder' : 'admin';
+
+      const response = await fetch('/api/requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'report',
+          title: `${reportType === 'weekly' ? 'Weekly' : 'Monthly'} Report`,
+          createdBy: user?.fullName || user?.username || 'User',
+          createdById: user?.id,
+          createdByRole: user?.role,
+          createdByDesignation: user?.designation,
+          target,
+          uploadedFile: {
+            name: formData.reportFile.name,
+            size: formData.reportFile.size,
+            type: formData.reportFile.type,
+            base64: fileBase64,
+            uploadedAt: new Date().toISOString(),
+          },
+          signatureFrom,
+          payload: {
+            name: formData.name,
+            id: formData.id,
+            reportContent: formData.reportContent,
+            reportFileName: formData.reportFileName,
+            reportType,
+            submittedAt: new Date().toISOString(),
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        toast.error('Failed to submit report');
+        return;
+      }
+
+      toast.success(`${reportType === 'weekly' ? 'Weekly' : 'Monthly'} report submitted! Sent to Admin.`);
+      setFormData({
+        name: user?.fullName || '',
+        id: user?.id || '',
+        reportContent: '',
+        reportFile: null,
+        reportFileName: '',
+      });
+      router.push('/dashboard');
+    } catch (error) {
+      console.error('Error converting file:', error);
+      toast.error('Error processing file. Please try again.');
     }
-
-    toast.success(`${reportType === 'weekly' ? 'Weekly' : 'Monthly'} report submitted! Sent to Founder.`);
-    setFormData({
-      name: user?.fullName || '',
-      id: user?.id || '',
-      reportContent: '',
-      reportFile: null,
-      reportFileName: '',
-    });
   };
 
   if (!isAuthenticated) {

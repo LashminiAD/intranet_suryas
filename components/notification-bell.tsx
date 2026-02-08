@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import { Bell } from 'lucide-react';
 import { useNotifications } from '@/lib/notification-context';
 import {
@@ -15,6 +16,15 @@ import { Button } from '@/components/ui/button';
 
 export function NotificationBell() {
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
+  const visibleNotifications = notifications.filter((notif) => !notif.read);
+  const router = useRouter();
+
+  const handleNotificationClick = async (notif: { id: string; type?: string }) => {
+    await markAsRead(notif.id);
+    if (notif.type === 'user_access_request') {
+      router.push('/admin-dashboard#access-requests');
+    }
+  };
 
   const formatTimestamp = (timestamp: string) => {
     const date = new Date(timestamp);
@@ -56,15 +66,15 @@ export function NotificationBell() {
           )}
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        {notifications.length === 0 ? (
+        {visibleNotifications.length === 0 ? (
           <div className="p-4 text-center text-sm text-slate-500">
             No notifications
           </div>
         ) : (
-          notifications.slice(0, 10).map((notif) => (
+          visibleNotifications.slice(0, 10).map((notif) => (
             <DropdownMenuItem
               key={notif.id}
-              onClick={() => markAsRead(notif.id)}
+              onClick={() => handleNotificationClick(notif)}
               className={`flex flex-col items-start p-3 cursor-pointer ${
                 !notif.read ? 'bg-blue-50' : ''
               }`}
@@ -84,10 +94,10 @@ export function NotificationBell() {
             </DropdownMenuItem>
           ))
         )}
-        {notifications.length > 10 && (
+        {visibleNotifications.length > 10 && (
           <div className="p-2 text-center">
             <span className="text-xs text-slate-500">
-              +{notifications.length - 10} more notifications
+              +{visibleNotifications.length - 10} more notifications
             </span>
           </div>
         )}

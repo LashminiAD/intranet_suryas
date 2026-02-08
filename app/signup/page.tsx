@@ -20,7 +20,6 @@ export default function SignUpPage() {
     email: '',
     password: '',
     confirmPassword: '',
-    role: 'user',
   });
 
   const [showPassword, setShowPassword] = useState(false);
@@ -107,7 +106,7 @@ export default function SignUpPage() {
           email: formData.email,
           password: formData.password,
           fullName: formData.username,
-          role: formData.role, // Admin or user
+          role: 'user',
           designation: 'Not Set', // Will be set during profile setup
         }),
       });
@@ -281,19 +280,6 @@ export default function SignUpPage() {
                 )}
               </div>
 
-              {/* Role Selection */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Account Role *</label>
-                <Select value={formData.role} onValueChange={(value) => setFormData((prev) => ({ ...prev, role: value }))}>
-                  <SelectTrigger className="w-full border-slate-300">
-                    <SelectValue placeholder="Select account role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="user">User</SelectItem>
-                    <SelectItem value="admin">Admin</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
 
               {/* Terms Checkbox */}
               <div className="flex items-start gap-2 mt-4">

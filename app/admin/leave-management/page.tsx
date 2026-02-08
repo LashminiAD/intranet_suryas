@@ -8,6 +8,7 @@ import { CheckCircle, XCircle, Clock, Search, Filter, FileDown, Eye } from 'luci
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
+import FileViewerModal from '@/components/file-viewer-modal';
 
 export default function LeaveManagement() {
   const { isAuthenticated } = useAuth();
@@ -17,6 +18,7 @@ export default function LeaveManagement() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [selectedRequest, setSelectedRequest] = useState<any | null>(null);
+  const [viewingFile, setViewingFile] = useState<any>(null);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -67,6 +69,19 @@ export default function LeaveManagement() {
     toast.error('❌ Leave request rejected!');
   };
 
+  const downloadUploadedFile = (request: any) => {
+    if (!request.uploadedFile) {
+      toast.error('No file available');
+      return;
+    }
+    const link = document.createElement('a');
+    link.href = request.uploadedFile.base64;
+    link.download = request.uploadedFile.name;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const downloadRequestPdf = (request: any) => {
     const payload = request.payload || {};
     const html = `
@@ -84,6 +99,7 @@ export default function LeaveManagement() {
           <h1>${request.title}</h1>
           <div class="meta">Submitted by ${request.createdBy} • ${new Date(request.createdAt).toLocaleString('en-IN')}</div>
           <div class="line">Leave Type: ${payload.leaveType}</div>
+          <div class="line">Past-Date Request: ${payload.isPastDateRequest ? 'Yes' : 'No'}</div>
           <div class="line">Dates: ${payload.fromDate} - ${payload.toDate}</div>
           <div class="line">Reason: ${payload.reason}</div>
           <div class="line">Status: ${request.status}</div>
@@ -227,6 +243,11 @@ export default function LeaveManagement() {
                         <span className="inline-block px-3 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded-full">
                           {request.payload?.leaveType}
                         </span>
+                        {request.payload?.isPastDateRequest && (
+                          <span className="ml-2 inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
+                            Past Date
+                          </span>
+                        )}
                       </td>
                       <td className="px-6 py-4 text-sm text-slate-600">
                         {request.payload?.fromDate} - {request.payload?.toDate}
@@ -248,6 +269,16 @@ export default function LeaveManagement() {
                       </td>
                       <td className="px-6 py-4 text-center">
                         <div className="flex flex-wrap gap-2 justify-center">
+                          {request.uploadedFile && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setViewingFile(request.uploadedFile)}
+                              title="View uploaded form"
+                            >
+                              📄 Form
+                            </Button>
+                          )}
                           <Button
                             size="sm"
                             variant="outline"
@@ -255,12 +286,22 @@ export default function LeaveManagement() {
                           >
                             <Eye size={14} className="mr-1" /> View
                           </Button>
+                          {request.uploadedFile && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => downloadUploadedFile(request)}
+                              title="Download uploaded form"
+                            >
+                              <FileDown size={14} className="mr-1" /> Form
+                            </Button>
+                          )}
                           <Button
                             size="sm"
                             variant="outline"
                             onClick={() => downloadRequestPdf(request)}
                           >
-                            <FileDown size={14} className="mr-1" /> Download
+                            <FileDown size={14} className="mr-1" /> Summary
                           </Button>
                           {request.status === 'pending' && (
                             <>
@@ -300,13 +341,29 @@ export default function LeaveManagement() {
               <div className="space-y-2 text-sm text-slate-700">
                 <p><strong>Employee:</strong> {selectedRequest.createdBy}</p>
                 <p><strong>Leave Type:</strong> {selectedRequest.payload?.leaveType}</p>
+                <p><strong>Past-Date Request:</strong> {selectedRequest.payload?.isPastDateRequest ? 'Yes' : 'No'}</p>
                 <p><strong>Dates:</strong> {selectedRequest.payload?.fromDate} - {selectedRequest.payload?.toDate}</p>
                 <p><strong>Reason:</strong> {selectedRequest.payload?.reason}</p>
                 <p><strong>Status:</strong> {selectedRequest.status}</p>
                 <p><strong>Medical Certificate:</strong> {selectedRequest.payload?.medicalCertificateName || 'None'}</p>
                 <p><strong>Medical Proof:</strong> {selectedRequest.payload?.medicalProofName || 'None'}</p>
+                {selectedRequest.uploadedFile && (
+                  <p><strong>Uploaded Form:</strong> {selectedRequest.uploadedFile.name}</p>
+                )}
               </div>
               <div className="flex gap-2">
+                {selectedRequest.uploadedFile && (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setViewingFile(selectedRequest.uploadedFile);
+                      setSelectedRequest(null);
+                    }}
+                    className="flex-1"
+                  >
+                    View Form
+                  </Button>
+                )}
                 <Button variant="outline" onClick={() => setSelectedRequest(null)} className="flex-1">
                   Close
                 </Button>
@@ -314,6 +371,8 @@ export default function LeaveManagement() {
             </Card>
           </div>
         )}
+
+        <FileViewerModal file={viewingFile} onClose={() => setViewingFile(null)} />
       </div>
     </MainLayout>
   );

@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { addRequest, getRequestsByTarget, RequestItem, RequestTarget, RequestType } from '@/lib/request-store';
+import { RequestItem, RequestTarget, RequestType, UploadedFile } from '@/lib/request-store';
+import { addRequestDB, getRequestsByTargetDB } from '@/lib/request-db';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const target = (searchParams.get('target') || 'admin') as RequestTarget;
-  const items = getRequestsByTarget(target);
+  const items = getRequestsByTargetDB(target);
   return NextResponse.json({ success: true, requests: items });
 }
 
@@ -20,6 +21,8 @@ export async function POST(request: NextRequest) {
       createdByDesignation,
       payload,
       target,
+      uploadedFile,
+      signatureFrom,
     } = body as {
       type: RequestType;
       title: string;
@@ -29,6 +32,8 @@ export async function POST(request: NextRequest) {
       createdByDesignation?: string;
       payload: Record<string, any>;
       target: RequestTarget;
+      uploadedFile?: UploadedFile;
+      signatureFrom?: string;
     };
 
     if (!type || !title || !createdBy || !payload || !target) {
@@ -47,9 +52,11 @@ export async function POST(request: NextRequest) {
       target,
       status: 'pending',
       createdAt: new Date().toISOString(),
+      uploadedFile,
+      signatureFrom,
     };
 
-    const saved = addRequest(newRequest);
+    const saved = addRequestDB(newRequest);
 
     return NextResponse.json({ success: true, request: saved });
   } catch (error) {

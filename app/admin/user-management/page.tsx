@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import MainLayout from '@/components/main-layout';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,94 +8,86 @@ import { Search, Filter, CheckCircle, XCircle, Clock, Users as UsersIcon, UserCh
 import { toast } from 'sonner';
 
 export default function UserManagement() {
-  const [users, setUsers] = useState([
-    {
-      id: 1,
-      name: 'John Intern',
-      type: 'Intern',
-      email: 'john@company.com',
-      status: 'active',
-      registeredDate: '2026-01-10',
-      lastLogin: '2026-01-21 09:30 AM',
-      designation: 'Junior Developer',
-    },
-    {
-      id: 2,
-      name: 'Sarah Freelancer',
-      type: 'Freelancer',
-      email: 'sarah@freelance.com',
-      status: 'active',
-      registeredDate: '2026-01-05',
-      lastLogin: '2026-01-20 02:15 PM',
-      designation: 'UI/UX Designer',
-    },
-    {
-      id: 3,
-      name: 'Mike Employee',
-      type: 'Employee',
-      email: 'mike@company.com',
-      status: 'offline',
-      registeredDate: '2025-12-15',
-      lastLogin: '2026-01-18 11:45 AM',
-      designation: 'Project Manager',
-    },
-    {
-      id: 4,
-      name: 'Lisa Intern',
-      type: 'Intern',
-      email: 'lisa@company.com',
-      status: 'pending',
-      registeredDate: '2026-01-20',
-      lastLogin: 'Never',
-      designation: 'Data Analyst',
-    },
-    {
-      id: 5,
-      name: 'David Employee',
-      type: 'Employee',
-      email: 'david@company.com',
-      status: 'active',
-      registeredDate: '2025-11-01',
-      lastLogin: '2026-01-21 08:00 AM',
-      designation: 'Senior Developer',
-    },
-  ]);
+  const [users, setUsers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
 
-  const handleApproveUser = (id: number) => {
-    setUsers((prev) =>
-      prev.map((user) => (user.id === id ? { ...user, status: 'active' } : user))
-    );
+  useEffect(() => {
+    const fetchUsers = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch('/api/admin/users');
+        if (!response.ok) return;
+        const data = await response.json();
+        setUsers(data.users || []);
+      } catch (error) {
+        console.error('User fetch error:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUsers();
+    const interval = setInterval(fetchUsers, 20000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleApproveUser = async (id: string) => {
+    const response = await fetch('/api/admin/users', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: id, updates: { status: 'active' } }),
+    });
+    if (!response.ok) {
+      toast.error('Unable to approve user');
+      return;
+    }
     toast.success('✅ User approved!');
   };
 
-  const handleSuspendUser = (id: number) => {
-    setUsers((prev) =>
-      prev.map((user) => (user.id === id ? { ...user, status: 'suspended' } : user))
-    );
+  const handleSuspendUser = async (id: string) => {
+    const response = await fetch('/api/admin/users', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: id, updates: { status: 'suspended' } }),
+    });
+    if (!response.ok) {
+      toast.error('Unable to suspend user');
+      return;
+    }
     toast.error('⏸️ User suspended!');
   };
 
+  const getUserType = (user: any) => {
+    const designation = (user.designation || '').toLowerCase();
+    if (designation.includes('intern')) return 'Intern';
+    if (designation.includes('freelancer')) return 'Freelancer';
+    if (designation.includes('employee')) return 'Employee';
+    if (user.role === 'admin') return 'Admin';
+    if (user.role === 'founder') return 'Founder';
+    return 'User';
+  };
+
   const filteredUsers = users
-    .filter((user) => filterType === 'all' || user.type === filterType)
+    .filter((user) => filterType === 'all' || getUserType(user) === filterType)
     .filter((user) => filterStatus === 'all' || user.status === filterStatus)
     .filter(
       (user) =>
-        user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchTerm.toLowerCase())
+        (user.fullName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (user.email || '').toLowerCase().includes(searchTerm.toLowerCase())
     );
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active':
         return 'bg-green-100 text-green-700';
-      case 'offline':
-        return 'bg-slate-100 text-slate-700';
       case 'pending':
         return 'bg-yellow-100 text-yellow-700';
+      case 'denied':
+        return 'bg-slate-100 text-slate-700';
       case 'suspended':
         return 'bg-red-100 text-red-700';
       default:
@@ -107,10 +99,10 @@ export default function UserManagement() {
     switch (status) {
       case 'active':
         return <CheckCircle className="text-green-500" size={18} />;
-      case 'offline':
-        return <XCircle className="text-slate-500" size={18} />;
       case 'pending':
         return <Clock className="text-yellow-500" size={18} />;
+      case 'denied':
+        return <XCircle className="text-slate-500" size={18} />;
       case 'suspended':
         return <UserX className="text-red-500" size={18} />;
       default:
@@ -122,9 +114,9 @@ export default function UserManagement() {
     total: users.length,
     active: users.filter((u) => u.status === 'active').length,
     pending: users.filter((u) => u.status === 'pending').length,
-    employees: users.filter((u) => u.type === 'Employee').length,
-    interns: users.filter((u) => u.type === 'Intern').length,
-    freelancers: users.filter((u) => u.type === 'Freelancer').length,
+    employees: users.filter((u) => getUserType(u) === 'Employee').length,
+    interns: users.filter((u) => getUserType(u) === 'Intern').length,
+    freelancers: users.filter((u) => getUserType(u) === 'Freelancer').length,
   };
 
   return (
@@ -193,8 +185,8 @@ export default function UserManagement() {
           >
             <option value="all">All Status</option>
             <option value="active">Active</option>
-            <option value="offline">Offline</option>
             <option value="pending">Pending</option>
+            <option value="denied">Denied</option>
             <option value="suspended">Suspended</option>
           </select>
         </div>
@@ -224,14 +216,14 @@ export default function UserManagement() {
                     <tr key={user.id} className="border-b border-slate-200 hover:bg-slate-50 transition">
                       <td className="px-6 py-4">
                         <div>
-                          <p className="text-sm font-semibold text-slate-900">{user.name}</p>
-                          <p className="text-xs text-slate-500">{user.designation}</p>
+                          <p className="text-sm font-semibold text-slate-900">{user.fullName || user.username}</p>
+                          <p className="text-xs text-slate-500">{user.designation || 'Not Set'}</p>
                           <p className="text-xs text-blue-600">{user.email}</p>
                         </div>
                       </td>
                       <td className="px-6 py-4">
                         <span className="inline-block px-3 py-1 bg-slate-100 text-slate-700 text-xs font-semibold rounded-full">
-                          {user.type}
+                          {getUserType(user)}
                         </span>
                       </td>
                       <td className="px-6 py-4">
@@ -246,8 +238,12 @@ export default function UserManagement() {
                           </span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-sm text-slate-600">{user.registeredDate}</td>
-                      <td className="px-6 py-4 text-sm text-slate-600">{user.lastLogin}</td>
+                      <td className="px-6 py-4 text-sm text-slate-600">
+                        {user.createdAt ? new Date(user.createdAt).toLocaleDateString('en-IN') : 'N/A'}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-600">
+                        {user.approvedAt ? new Date(user.approvedAt).toLocaleDateString('en-IN') : 'N/A'}
+                      </td>
                       <td className="px-6 py-4 text-center">
                         <div className="flex gap-2 justify-center flex-wrap">
                           {user.status === 'pending' && (
@@ -291,8 +287,8 @@ export default function UserManagement() {
               <p className="text-lg font-bold text-yellow-600">{users.filter((u) => u.status === 'pending').length}</p>
             </div>
             <div>
-              <p className="text-slate-600">Offline</p>
-              <p className="text-lg font-bold text-slate-600">{users.filter((u) => u.status === 'offline').length}</p>
+              <p className="text-slate-600">Denied</p>
+              <p className="text-lg font-bold text-slate-600">{users.filter((u) => u.status === 'denied').length}</p>
             </div>
             <div>
               <p className="text-slate-600">Suspended</p>

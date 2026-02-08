@@ -22,6 +22,8 @@ export default function CertificateRequestPage() {
     mentorEmail: '',
     collegeName: '',
     yearDept: '',
+    filledFormFile: null as File | null,
+    filledFormFileName: '',
     noDemandCertificate: null as File | null,
     noDemandFileName: '',
     certificateType: 'intern',
@@ -45,7 +47,13 @@ export default function CertificateRequestPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (e.target.name === 'noDemandCertificate') {
+    if (e.target.name === 'filledFormFile') {
+      if (!file.type.includes('pdf') && !file.type.includes('image')) {
+        toast.error('Only PDF and image files are allowed');
+        return;
+      }
+      setFormData((prev) => ({ ...prev, filledFormFile: file, filledFormFileName: file.name }));
+    } else if (e.target.name === 'noDemandCertificate') {
       if (!file.type.includes('pdf') && !file.type.includes('image')) {
         toast.error('Only PDF and image files are allowed');
         return;
@@ -60,30 +68,97 @@ export default function CertificateRequestPage() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.mentorName || !formData.collegeName || !formData.noDemandCertificate || !formData.reportFile) {
-      toast.error('Please fill in all required fields');
+    if (!formData.mentorName || !formData.collegeName || !formData.noDemandCertificate || !formData.reportFile || !formData.filledFormFile) {
+      toast.error('Please fill in all required fields and upload the filled form');
       return;
     }
 
-    toast.success('Certificate request submitted! Forwarded to Head of Team.');
-    setFormData({
-      fullName: user?.fullName || '',
-      empId: user?.id || '',
-      mentorName: '',
-      mentorPhone: '',
-      mentorEmail: '',
-      collegeName: '',
-      yearDept: '',
-      noDemandCertificate: null,
-      noDemandFileName: '',
-      certificateType: 'intern',
-      reportFile: null,
-      reportFileName: '',
-      forwardedBy: '',
-    });
+    const fileToBase64 = (file: File): Promise<string> => {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    };
+
+    try {
+      const fileBase64 = await fileToBase64(formData.filledFormFile);
+      const getSignatureFrom = (designation?: string) => {
+        const roleValue = (designation || '').toLowerCase();
+        if (roleValue.includes('intern')) return 'Hareesh';
+        if (roleValue.includes('freelancer') || roleValue.includes('employee')) return 'Founder';
+        return 'Admin';
+      };
+
+      const signatureFrom = getSignatureFrom(user?.designation);
+      const response = await fetch('/api/requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'certificate',
+          title: 'Certificate Request',
+          createdBy: user?.fullName || user?.username || 'User',
+          createdById: user?.id,
+          createdByRole: user?.role,
+          createdByDesignation: user?.designation,
+          target: 'admin',
+          signatureFrom,
+          uploadedFile: {
+            name: formData.filledFormFile.name,
+            size: formData.filledFormFile.size,
+            type: formData.filledFormFile.type,
+            base64: fileBase64,
+            uploadedAt: new Date().toISOString(),
+          },
+          payload: {
+            fullName: formData.fullName,
+            empId: formData.empId,
+            mentorName: formData.mentorName,
+            mentorPhone: formData.mentorPhone,
+            mentorEmail: formData.mentorEmail,
+            collegeName: formData.collegeName,
+            yearDept: formData.yearDept,
+            certificateType: formData.certificateType,
+            noDemandFileName: formData.noDemandFileName,
+            reportFileName: formData.reportFileName,
+            forwardedBy: formData.forwardedBy,
+            submittedAt: new Date().toISOString(),
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        toast.error('Failed to submit certificate request');
+        return;
+      }
+
+      toast.success('Certificate request submitted to Admin.');
+      setFormData({
+        fullName: user?.fullName || '',
+        empId: user?.id || '',
+        mentorName: '',
+        mentorPhone: '',
+        mentorEmail: '',
+        collegeName: '',
+        yearDept: '',
+        filledFormFile: null,
+        filledFormFileName: '',
+        noDemandCertificate: null,
+        noDemandFileName: '',
+        certificateType: 'intern',
+        reportFile: null,
+        reportFileName: '',
+        forwardedBy: '',
+      });
+      router.push('/dashboard');
+    } catch (error) {
+      console.error('Error converting file:', error);
+      toast.error('Error processing file. Please try again.');
+    }
   };
 
   if (!isAuthenticated) {
@@ -199,6 +274,29 @@ export default function CertificateRequestPage() {
                     <option value="freelancer">Freelancer</option>
                     <option value="employee">Employee</option>
                   </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Filled Certificate Request Form (PDF/Image) *</label>
+                  <div className="flex items-center gap-2">
+                    <label className="flex-1 flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-blue-300 rounded-lg cursor-pointer hover:bg-blue-50 transition">
+                      <Upload size={18} className="text-blue-600" />
+                      <span className="text-sm text-blue-600 font-medium">Click to upload</span>
+                      <input
+                        type="file"
+                        name="filledFormFile"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        onChange={handleFileUpload}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                  {formData.filledFormFileName && (
+                    <div className="mt-2 flex items-center gap-2 text-sm text-green-700 bg-green-50 p-2 rounded">
+                      <FileUp size={16} />
+                      {formData.filledFormFileName}
+                    </div>
+                  )}
                 </div>
 
                 <div>

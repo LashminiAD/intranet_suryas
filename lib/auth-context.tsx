@@ -16,6 +16,7 @@ export interface User {
   companyRole?: string;
   purposeOfVisit?: string;
   guestFormCompleted?: boolean;
+  isProfileCompleted?: boolean;
 }
 
 interface AuthContextType {
@@ -30,7 +31,21 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(() => {
+    if (typeof window === 'undefined') {
+      return null;
+    }
+    const savedUser = localStorage.getItem('currentUser');
+    if (!savedUser) {
+      return null;
+    }
+    try {
+      return JSON.parse(savedUser) as User;
+    } catch (error) {
+      console.error('Failed to load user from localStorage:', error);
+      return null;
+    }
+  });
 
   useEffect(() => {
     // Load user from localStorage on mount

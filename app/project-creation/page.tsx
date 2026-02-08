@@ -56,60 +56,93 @@ export default function ProjectCreationPage() {
     e.preventDefault();
 
     if (!formData.projectTitle || !formData.abstract || !formData.clientName) {
-      toast.error('Please fill in all required fields');
+      toast.error('Please fill in all required fields and upload the proposal form');
       return;
     }
 
-    const response = await fetch('/api/requests', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        type: 'proposal',
-        title: 'Project Proposal',
-        createdBy: user?.fullName || user?.username || 'User',
-        createdById: user?.id,
-        createdByRole: user?.role,
-        createdByDesignation: user?.designation,
-        target: 'founder',
-        payload: {
-          projectTitle: formData.projectTitle,
-          projectStatus: formData.projectStatus,
-          createdBy: formData.createdBy,
-          abstractFileName: formData.abstractFileName,
-          clientName: formData.clientName,
-          clientOrganization: formData.clientOrganization,
-          clientDesignation: formData.clientDesignation,
-          clientAddress: formData.clientAddress,
-          clientPhone: formData.clientPhone,
-          clientEmail: formData.clientEmail,
-          projectAmount: formData.projectAmount,
-          forwardedBy: formData.forwardedBy,
-          submittedAt: new Date().toISOString(),
-        },
-      }),
-    });
+    const fileToBase64 = (file: File): Promise<string> => {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    };
 
-    if (!response.ok) {
-      toast.error('Failed to submit proposal');
-      return;
+    try {
+      const fileBase64 = await fileToBase64(formData.abstract);
+      const getSignatureFrom = (designation?: string) => {
+        const roleValue = (designation || '').toLowerCase();
+        if (roleValue.includes('intern')) return 'Hareesh';
+        if (roleValue.includes('freelancer') || roleValue.includes('employee')) return 'Founder';
+        return 'Admin';
+      };
+
+      const signatureFrom = getSignatureFrom(user?.designation);
+
+      const response = await fetch('/api/requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'proposal',
+          title: 'Project Proposal',
+          createdBy: user?.fullName || user?.username || 'User',
+          createdById: user?.id,
+          createdByRole: user?.role,
+          createdByDesignation: user?.designation,
+          target: 'admin',
+          signatureFrom,
+          uploadedFile: {
+            name: formData.abstract.name,
+            size: formData.abstract.size,
+            type: formData.abstract.type,
+            base64: fileBase64,
+            uploadedAt: new Date().toISOString(),
+          },
+          payload: {
+            projectTitle: formData.projectTitle,
+            projectStatus: formData.projectStatus,
+            createdBy: formData.createdBy,
+            abstractFileName: formData.abstractFileName,
+            clientName: formData.clientName,
+            clientOrganization: formData.clientOrganization,
+            clientDesignation: formData.clientDesignation,
+            clientAddress: formData.clientAddress,
+            clientPhone: formData.clientPhone,
+            clientEmail: formData.clientEmail,
+            projectAmount: formData.projectAmount,
+            forwardedBy: formData.forwardedBy,
+            submittedAt: new Date().toISOString(),
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        toast.error('Failed to submit proposal');
+        return;
+      }
+
+      toast.success('Proposal created successfully! Submitted to Admin.');
+      setFormData({
+        projectTitle: '',
+        projectStatus: 'planned',
+        createdBy: user?.fullName || '',
+        abstract: null,
+        abstractFileName: '',
+        clientName: '',
+        clientOrganization: '',
+        clientDesignation: '',
+        clientAddress: '',
+        clientPhone: '',
+        clientEmail: '',
+        projectAmount: '',
+        forwardedBy: '',
+      });
+      router.push('/dashboard');
+    } catch (error) {
+      console.error('Error converting file:', error);
+      toast.error('Error processing file. Please try again.');
     }
-
-    toast.success('Proposal created successfully! Submitted to Founder.');
-    setFormData({
-      projectTitle: '',
-      projectStatus: 'planned',
-      createdBy: user?.fullName || '',
-      abstract: null,
-      abstractFileName: '',
-      clientName: '',
-      clientOrganization: '',
-      clientDesignation: '',
-      clientAddress: '',
-      clientPhone: '',
-      clientEmail: '',
-      projectAmount: '',
-      forwardedBy: '',
-    });
   };
 
   if (!isAuthenticated) {

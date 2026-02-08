@@ -21,10 +21,11 @@ export default function LeaveFormPage() {
     designation: user?.designation || '',
     email: user?.email || '',
     phone: '',
-    leaveType: 'annual',
+    leaveType: 'personal',
     fromDate: '',
     toDate: '',
     reason: '',
+    isPastDateRequest: false,
     filledFormFile: null as File | null,
     medicalCertificate: null as File | null,
     medicalProof: null as File | null,
@@ -106,7 +107,7 @@ export default function LeaveFormPage() {
       return false;
     }
 
-    if (fromDate < today || toDate < today) {
+    if (!formData.isPastDateRequest && (fromDate < today || toDate < today)) {
       toast.error('Please select a valid future date');
       return false;
     }
@@ -127,11 +128,6 @@ export default function LeaveFormPage() {
       return;
     }
 
-    if (!formData.filledFormFile) {
-      toast.error('Please upload the filled leave form before submitting');
-      return;
-    }
-
     if (!validateDates()) {
       return;
     }
@@ -141,62 +137,104 @@ export default function LeaveFormPage() {
       return;
     }
 
-    const needsFounderSignature = /(freelancer|employee)/i.test(user?.designation || '');
+    const getSignatureFrom = (designation?: string) => {
+      const roleValue = (designation || '').toLowerCase();
+      if (roleValue.includes('intern')) return 'Hareesh';
+      if (roleValue.includes('freelancer') || roleValue.includes('employee')) return 'Founder';
+      return 'Admin';
+    };
+
+    const signatureFrom = getSignatureFrom(user?.designation);
     const isAdminRequester = user?.role === 'admin';
-    const target = needsFounderSignature ? 'founder' : 'admin';
+    const target = signatureFrom === 'Founder' ? 'founder' : 'admin';
     const finalTarget = isAdminRequester ? 'founder' : target;
 
-    const response = await fetch('/api/requests', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        type: 'leave',
-        title: `${formData.leaveType.toUpperCase()} Leave Request`,
-        createdBy: user?.fullName || user?.username || 'User',
-        createdById: user?.id,
-        createdByRole: user?.role,
-        createdByDesignation: user?.designation,
-        target: finalTarget,
-        payload: {
-          name: formData.name,
-          id: formData.id,
-          designation: formData.designation,
-          email: formData.email,
-          phone: formData.phone,
-          leaveType: formData.leaveType,
-          fromDate: formData.fromDate,
-          toDate: formData.toDate,
-          reason: formData.reason,
-          filledFormFileName: filledFormFileName,
-          medicalCertificateName: certificateFileName,
-          medicalProofName: medicalProofFileName,
-          submittedAt: new Date().toISOString(),
-        },
-      }),
-    });
+    // Convert file to base64
+    const fileToBase64 = (file: File): Promise<string> => {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    };
 
-    if (!response.ok) {
-      toast.error('Failed to submit leave request');
-      return;
+    try {
+      const fileBase64 = formData.filledFormFile
+        ? await fileToBase64(formData.filledFormFile)
+        : null;
+
+      const leaveTitle = `${formData.leaveType.toUpperCase()} Leave Request`;
+      const response = await fetch('/api/requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'leave',
+          title: formData.isPastDateRequest ? `Past-Date ${leaveTitle}` : leaveTitle,
+          createdBy: user?.fullName || user?.username || 'User',
+          createdById: user?.id,
+          createdByRole: user?.role,
+          createdByDesignation: user?.designation,
+          target: finalTarget,
+          uploadedFile: fileBase64 && formData.filledFormFile
+            ? {
+                name: formData.filledFormFile.name,
+                size: formData.filledFormFile.size,
+                type: formData.filledFormFile.type,
+                base64: fileBase64,
+                uploadedAt: new Date().toISOString(),
+              }
+            : undefined,
+          signatureFrom,
+          payload: {
+            name: formData.name,
+            id: formData.id,
+            designation: formData.designation,
+            email: formData.email,
+            phone: formData.phone,
+            leaveType: formData.leaveType,
+            fromDate: formData.fromDate,
+            toDate: formData.toDate,
+            reason: formData.reason,
+            isPastDateRequest: formData.isPastDateRequest,
+            filledFormFileName: filledFormFileName,
+            medicalCertificateName: certificateFileName,
+            medicalProofName: medicalProofFileName,
+            submittedAt: new Date().toISOString(),
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        toast.error('Failed to submit leave request');
+        return;
+      }
+
+      toast.success('Leave request submitted successfully!');
+      // Reset form
+      setFormData({
+        name: user?.fullName || '',
+        id: user?.id || '',
+        designation: user?.designation || '',
+        email: user?.email || '',
+        phone: '',
+        leaveType: 'personal',
+        fromDate: '',
+        toDate: '',
+        reason: '',
+        isPastDateRequest: false,
+        filledFormFile: null,
+        medicalCertificate: null,
+        medicalProof: null,
+      });
+      setFilledFormFileName('');
+      setCertificateFileName('');
+      setMedicalProofFileName('');
+      router.push('/dashboard');
+    } catch (error) {
+      console.error('Error converting file:', error);
+      toast.error('Error processing file. Please try again.');
     }
-
-    toast.success('Leave request submitted successfully!');
-    // Reset form
-    setFormData({
-      name: user?.fullName || '',
-      id: user?.id || '',
-      designation: user?.designation || '',
-      email: user?.email || '',
-      phone: '',
-      leaveType: 'annual',
-      fromDate: '',
-      toDate: '',
-      reason: '',
-      medicalCertificate: null,
-      medicalProof: null,
-    });
-    setCertificateFileName('');
-    setMedicalProofFileName('');
   };
 
   const handleCancel = () => {
@@ -262,12 +300,34 @@ export default function LeaveFormPage() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="annual">Annual Leave</SelectItem>
                           <SelectItem value="sick">Sick Leave</SelectItem>
                           <SelectItem value="personal">Personal Leave</SelectItem>
                           <SelectItem value="emergency">Emergency Leave</SelectItem>
                         </SelectContent>
                       </Select>
+                    </div>
+
+                    <div className="bg-amber-50 border border-amber-300 rounded-lg p-4">
+                      <label className="flex items-start gap-3 text-sm text-amber-900 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          name="isPastDateRequest"
+                          checked={formData.isPastDateRequest}
+                          onChange={(e) =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              isPastDateRequest: e.target.checked,
+                            }))
+                          }
+                          className="mt-1"
+                        />
+                        <span>
+                          <span className="font-semibold">Past-date leave request</span>
+                          <span className="block text-xs text-amber-700 mt-1">
+                            Use this for post-leave or correction requests (previous dates).
+                          </span>
+                        </span>
+                      </label>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
@@ -308,7 +368,7 @@ export default function LeaveFormPage() {
                       <div className="flex items-start gap-2 mb-3">
                         <span className="text-amber-600 text-xl">⚠️</span>
                         <div>
-                          <h3 className="font-semibold text-amber-900">Mandatory: Upload Filled Form</h3>
+                          <h3 className="font-semibold text-amber-900">Optional: Upload Filled Form</h3>
                           <p className="text-sm text-amber-700 mt-1">
                             Before submitting, download the Leave Form from the{' '}
                             <a href="/forms-gallery" className="underline font-medium">Forms Gallery</a>, 

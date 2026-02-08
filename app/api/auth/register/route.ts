@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import { findUserByUsername, addUser } from '@/lib/user-database';
+import { findUserByUsername, addUser, getAllUsers } from '@/lib/user-database';
+import { saveUsersToDB } from '@/lib/user-db';
+import { addNotificationDB } from '@/lib/notification-db';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { username, email, password, fullName, role = 'user', designation = '' } = body;
+    const { username, email, password, fullName, designation = '' } = body;
 
     // Validate inputs
     if (!username || !email || !password || !fullName) {
@@ -26,9 +28,10 @@ export async function POST(request: NextRequest) {
     // Hash password
     const passwordHash = await bcrypt.hash(password, 10);
 
-    const isPrivileged = role === 'admin' || role === 'founder';
+    const role = 'user';
+    const isPrivileged = false;
 
-    // Create new user
+    // Create new user with PENDING_APPROVAL status for non-privileged users
     const newUser = {
       id: `user-${Date.now()}`,
       username,
@@ -38,12 +41,47 @@ export async function POST(request: NextRequest) {
       fullName,
       designation: designation || 'User',
       profilePictureUploaded: false,
-      status: isPrivileged ? 'active' : 'pending',
+      status: isPrivileged ? 'active' : 'pending_approval', // Clear status: PENDING_APPROVAL
+      emailVerified: false, // Do NOT verify email on signup
+      verificationToken: undefined, // No verification token yet (sent after admin approval)
+      verificationSentAt: undefined,
       requestedAt: isPrivileged ? undefined : new Date().toISOString(),
       createdAt: new Date().toISOString(),
     };
 
+    // Save to in-memory DB
     const savedUser = addUser(newUser);
+
+    // Persist to file DB
+    saveUsersToDB(getAllUsers());
+
+    // Notify admin and founder about new user access request
+    const adminNotification = addNotificationDB({
+      type: 'user_access_request',
+      title: `New User Access Request - ${fullName}`,
+      message: `${fullName} (${email}) has requested access. Click to review and approve/reject.`,
+      targetUser: 'admin',
+      relatedId: savedUser.id,
+      read: false,
+    });
+
+    addNotificationDB({
+      type: 'user_access_request',
+      title: `New User Access Request - ${fullName}`,
+      message: `${fullName} (${email}) has requested access. Click to review and approve/reject.`,
+      targetUser: 'founder',
+      relatedId: savedUser.id,
+      read: false,
+    });
+
+    console.log(
+      '[SIGNUP] New user created:',
+      savedUser.username,
+      'Status:',
+      savedUser.status,
+      'Admin notification created:',
+      adminNotification.id
+    );
 
     // Return user data (without password hash)
     const { passwordHash: _, ...userWithoutPassword } = savedUser;
@@ -53,7 +91,7 @@ export async function POST(request: NextRequest) {
       user: userWithoutPassword,
       message: isPrivileged
         ? 'User registered successfully'
-        : 'Access request submitted for admin approval',
+        : 'Your access request has been submitted to the admin. You will receive an email once approved.',
     });
   } catch (error) {
     console.error('Registration error:', error);

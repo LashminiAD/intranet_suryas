@@ -34,16 +34,14 @@ export default function GuestDashboard() {
     setIsSubmittingInquiry(true);
 
     try {
-      const response = await fetch('/api/guest/inquiry', {
+      const response = await fetch('/api/guest-inquiries', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          guestId: user?.id,
           guestName: user?.fullName,
-          guestEmail: user?.email,
+          email: user?.email,
           subject: inquirySubject,
           message: inquiryMessage,
-          timestamp: new Date().toISOString(),
         }),
       });
 

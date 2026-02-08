@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
 
       guestActivities.unshift(activity);
 
-      // Send notifications to admin and founder
+      // Send notifications to admin and founder only
       await fetch(`${request.nextUrl.origin}/api/notifications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -40,7 +40,19 @@ export async function POST(request: NextRequest) {
           type: 'guest_login',
           title: 'Guest Login',
           message: `${guestName} has logged in`,
-          targetUser: 'all',
+          targetUser: 'admin',
+          relatedId: activity.id,
+        }),
+      });
+
+      await fetch(`${request.nextUrl.origin}/api/notifications`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'guest_login',
+          title: 'Guest Login',
+          message: `${guestName} has logged in`,
+          targetUser: 'founder',
           relatedId: activity.id,
         }),
       });
