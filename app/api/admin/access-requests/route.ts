@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     const includeHistory = searchParams.get('includeHistory') === 'true';
     const usersFromDb = loadUsersFromDB();
     const pending = usersFromDb.filter(
-      (user) => user.status === 'pending_approval' || user.status === 'pending'
+      (user) => user.status === 'pending_approval'
     );
     console.log('[ACCESS-REQUESTS-GET] Pending users found:', pending.length);
     pending.forEach(u => console.log('  - User:', u.username, 'Status:', u.status));
