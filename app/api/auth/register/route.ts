@@ -31,8 +31,11 @@ export async function POST(request: NextRequest) {
     const role = 'user';
     const isPrivileged = false;
 
+    // Explicitly type the status to narrow it from string to literal union
+    const status: 'pending_approval' | 'active' = isPrivileged ? 'active' : 'pending_approval';
+
     // Create new user with PENDING_APPROVAL status for non-privileged users
-    const newUser: Omit<StoredUser, 'passwordHash'> & { passwordHash: string } = {
+    const newUser: StoredUser = {
       id: `user-${Date.now()}`,
       username,
       email,
@@ -41,7 +44,7 @@ export async function POST(request: NextRequest) {
       fullName,
       designation: designation || 'User',
       profilePictureUploaded: false,
-      status: (isPrivileged ? 'active' : 'pending_approval') as const,
+      status,
       emailVerified: false, // Do NOT verify email on signup
       verificationToken: undefined, // No verification token yet (sent after admin approval)
       verificationSentAt: undefined,
