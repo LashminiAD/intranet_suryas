@@ -32,7 +32,9 @@ export async function POST(request: NextRequest) {
     const isPrivileged = false;
 
     // Explicitly type the status to narrow it from string to literal union
-    const status: 'pending_approval' | 'active' = isPrivileged ? 'active' : 'pending_approval';
+   const status: 'pending_approval' | 'active' | 'rejected' =
+  isPrivileged ? 'active' : 'pending_approval';
+
 
     // Create new user with PENDING_APPROVAL status for non-privileged users
     const newUser: StoredUser = {
