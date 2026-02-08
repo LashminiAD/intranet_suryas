@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user was rejected
-    if (user.status === 'rejected' || user.status === 'denied') {
+    if (user.status === 'rejected') {
       return NextResponse.json(
         { error: 'Your access request has been rejected. Please contact support.' },
         { status: 403 }
