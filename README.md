@@ -1,86 +1,66 @@
 # 🏢 SURYA'S MiB Intranet Portal
 
-A modern, secure virtual intranet platform built with **Next.js 16**, **React 19**, and **Tailwind CSS**. Designed for seamless employee engagement, admin management, and guest access.
+A full-stack intranet platform for internal company operations — employee self-service, admin oversight, and guest access — built with Next.js 16, React 19, and TypeScript.
 
-## ✨ Features
+**Live demo:** [intranet-suryas-w26d.vercel.app](https://intranet-suryas-w26d.vercel.app/)
 
-### 🔐 Authentication & Authorization
-- Multi-role login system (Admin, User, Guest)
-- Secure profile setup modal
-- Role-based access control
-- Guest purpose tracking modal
+## Overview
 
-### 📊 Admin Dashboard
-- **Leave Management** - Approve/reject employee leave requests
-- **Allowance Claims** - Manage travel allowance claims
-- **Project Management** - Track ongoing projects
-- **User Management** - Monitor system users
-- **Analytics & Reports** - Detailed system insights
-- **Login History** - Track user activity
-- **Events & Webinars** - Upcoming company events carousel
+SURYA'S MiB Intranet Portal replaces scattered spreadsheets and email threads with a single role-based system. Employees submit leave requests, allowance claims, and project updates; admins approve or reject them from a centralized dashboard; guests get a scoped, purpose-tracked view of company info.
 
-### 👥 Employee Features
-- Leave request submission
-- Allowance claim filing
-- Project creation and tracking
-- Form gallery with downloadable documents
-- Certificate requests
-- Internal revenue tracking
+## Features
 
-### 🎯 Guest Portal
-- Guest purpose collection modal
-- Limited access to company information
-- Default user icon profile
-- Purpose tracking
+**Authentication & Access**
+- Role-based login (Admin / Employee / Guest) with route-level access control
+- First-login profile setup flow for employees
+- Guest purpose-tracking modal (name, company, reason for visit)
 
-### 📄 Company Information
-- Founder profile and background
-- UDYAM certificate display
-- Company registrations (MSME)
-- Contact information
-- Company history and achievements
+**Admin Dashboard**
+- Leave and allowance claim approvals
+- Project tracking and user management
+- Login history and basic analytics
 
-## 🚀 Getting Started
+**Employee Tools**
+- Leave requests, allowance claims, project creation
+- Downloadable forms gallery, certificate requests
 
-### Prerequisites
-- Node.js 18.17+ 
-- npm or yarn
+**Other**
+- UPI QR payment integration
+- Company info pages (founder profile, registrations)
 
-### Installation
+## 🛠 Tech Stack
+
+| Technology | Version | Purpose |
+|-----------|---------|---------|
+| **Next.js** | 16.1.4 | React framework |
+| **React** | 19.2.3 | UI library |
+| **TypeScript** | 5.x | Type safety |
+| **Tailwind CSS** | 4.x | Styling |
+| **Lucide React** | Latest | Icons |
+| **shadcn/ui** | Latest | UI components |
+| **Sonner** | Latest | Toast notifications |
+
+## Getting Started
 
 ```bash
-# Clone the repository
 git clone https://github.com/LashminiAD/intranet_suryas.git
 cd intranet_suryas
-
-# Install dependencies
 npm install
-
-# Start development server
 npm run dev
 ```
 
-### View in Browser
+Create a .env.local file in the root if you need to override the default API URL:
 
-Once the dev server is running, open your browser and go to:
+NEXT_PUBLIC_API_URL= `http://localhost:3000`
 
-**👉 [http://localhost:3000](http://localhost:3000)**
+## User Flows
 
-> **⚠️ IMPORTANT:** Make sure the dev server is running before clicking the link!
-> 
-> In your terminal, you should see:
-> ```
-> ✓ Next.js 16.1.4 (Turbopack)
-> ✓ Ready in XXXms
-> - Local:         http://localhost:3000
-> ```
+**Employee** — Login → Homepage → first-time profile setup (role: Intern/Freelancer/Employee) → dashboard access
 
-If the page doesn't load:
-1. ✅ **Ensure terminal shows** `✓ Ready in XXXms`
-2. ✅ **Check port 3000** is not blocked by another app
-3. ✅ **Clear browser cache** (Ctrl+Shift+Del)
-4. ✅ **Hard refresh** the page (Ctrl+F5 or Cmd+Shift+R)
-5. ✅ **Restart dev server** if still not working
+**Guest** — Login → Homepage → Guest Purpose Modal (name, company, role, purpose of visit) → limited-access dashboard
+
+**Admin** — Login → Homepage → full Admin Dashboard with system-wide control
+
 
 ## 📁 Project Structure
 
@@ -114,69 +94,7 @@ suryas-intranet/
 └── public/                     # Static assets
 ```
 
-## 🛠 Tech Stack
-
-| Technology | Version | Purpose |
-|-----------|---------|---------|
-| **Next.js** | 16.1.4 | React framework |
-| **React** | 19.2.3 | UI library |
-| **TypeScript** | 5.x | Type safety |
-| **Tailwind CSS** | 4.x | Styling |
-| **Lucide React** | Latest | Icons |
-| **shadcn/ui** | Latest | UI components |
-| **Sonner** | Latest | Toast notifications |
-
-## 🎨 User Flows
-
-### Employee/User Flow
-1. Login with credentials
-2. Redirected to Homepage
-3. Profile setup modal (first-time users)
-4. Role selection (Intern/Freelancer/Employee)
-5. Access to dashboard and features
-
-### Guest Flow
-1. Login with guest credentials
-2. Redirected to Homepage
-3. **Guest Purpose Modal** appears (Name, Designation, Company, Role, Purpose)
-4. Default user icon assigned
-5. Access to limited features
-
-### Admin Flow
-1. Login with admin credentials
-2. Redirected to Homepage
-3. Access to Admin Dashboard
-4. Full system control and oversight
-
-## 🔄 Key Features Explained
-
-### Guest Purpose Modal
-Collects guest information on first login:
-- **Name** (required)
-- **Designation** (optional)
-- **Company Name** (optional)
-- **Company Role** (optional)
-- **Purpose of Visit** (required) - description box
-
-### Profile Setup Modal
-For regular users (non-admin):
-- Profile picture upload (required)
-- Full name
-- Phone number
-- Role selection (Intern/Freelancer/Employee)
-
-### Payment Integration
-- Single UPI QR code for payments
-- Works with all UPI apps (Google Pay, PhonePe, BHIM)
-- Copy UPI ID to clipboard
-- Zoom QR code functionality
-
-### Forms Gallery
-- Category-based form organization
-- Download forms directly
-- Search and filter capabilities
-
-## 📝 Available Routes
+## 📝 Routes
 
 | Route | Access | Purpose |
 |-------|--------|---------|
@@ -224,38 +142,33 @@ Create a `.env.local` file:
 NEXT_PUBLIC_API_URL=http://localhost:3000
 ```
 
-## 🐛 Troubleshooting
 
-### Dev Server Won't Start
+## Troubleshooting
+
+**Dev server won't start (port in use):**
 ```bash
-# Kill process on port 3000
 # Windows
 netstat -ano | findstr :3000
 taskkill /PID <PID> /F
-
-# Then restart
-npm run dev
 ```
 
-### Dependencies Issues
+**Dependency issues:**
 ```bash
-# Clear node_modules and reinstall
 rm -r node_modules package-lock.json
 npm install
 ```
 
+**Build errors / stale cache:**
+```bash
+rm -r .next
+npm run dev
+```
 ### Build Errors
 ```bash
 # Clear Next.js cache
 rm -r .next
 npm run dev
 ```
-
-### Page Can't Be Reached
-1. Make sure `npm run dev` is running in terminal
-2. Look for `✓ Ready in XXXms` message
-3. Try `http://localhost:3000` not `https://`
-4. Hard refresh browser (Ctrl+F5)
 
 ## 📚 Learn More
 
@@ -266,7 +179,7 @@ npm run dev
 
 ## 📄 License
 
-This project is proprietary. All rights reserved © SURYA'S MiB.
+⚠️ This is a proprietary project built for SURYA'S MiB Enterprise. Code is shared here for portfolio purposes only. All rights reserved © SURYA'S MiB.
 
 ## 👤 Author
 
